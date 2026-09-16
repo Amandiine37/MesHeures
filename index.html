@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mes heures de travail</title>
+<meta name="description" content="Saisie des heures travaillees, semaine par semaine, avec export PDF du mois.">
+<meta name="theme-color" content="#5B3DF5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0A18" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#F2F3FD;
+    --surface:#FFFFFF;
+    --surface-2:#ECEDFB;
+    --ink:#16152E;
+    --ink-muted:#5C5B7D;
+    --border:#E1E2F6;
+    --accent:#5B3DF5;
+    --accent-2:#00A6C4;
+    --accent-3:#8B18E8;
+    --accent-ink:#FFFFFF;
+    --glow:rgba(91,61,245,.30);
+    --repos-bg:rgba(14,165,233,.15);  --repos-ink:#0369A1;
+    --conge-bg:rgba(16,185,129,.18);  --conge-ink:#047857;
+    --ferie-bg:rgba(245,158,11,.22);  --ferie-ink:#A94E06;
+    --alerte:#D22D2D;
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow:0 2px 4px rgba(22,21,46,.05), 0 10px 24px rgba(22,21,46,.07);
+    --shadow-accent:0 6px 18px var(--glow);
+    --font-body:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI Variable Display",
+                "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0B0A18; --surface:#15142B; --surface-2:#1F1D3E; --ink:#EDECFF; --ink-muted:#A5A2CE;
+      --border:#2E2C56; --accent:#9280FF; --accent-2:#22D3EE; --accent-3:#C77DFF; --accent-ink:#0F0D24;
+      --glow:rgba(146,128,255,.38);
+      --repos-bg:rgba(56,189,248,.18);  --repos-ink:#7DD3FC;
+      --conge-bg:rgba(52,211,153,.18);  --conge-ink:#6EE7B7;
+      --ferie-bg:rgba(251,191,36,.18);  --ferie-ink:#FCD34D;
+      --alerte:#FB7185;
+      --shadow:0 2px 4px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0A18; --surface:#15142B; --surface-2:#1F1D3E; --ink:#EDECFF; --ink-muted:#A5A2CE;
+    --border:#2E2C56; --accent:#9280FF; --accent-2:#22D3EE; --accent-3:#C77DFF; --accent-ink:#0F0D24;
+    --glow:rgba(146,128,255,.38);
+    --repos-bg:rgba(56,189,248,.18);  --repos-ink:#7DD3FC;
+    --conge-bg:rgba(52,211,153,.18);  --conge-ink:#6EE7B7;
+    --ferie-bg:rgba(251,191,36,.18);  --ferie-ink:#FCD34D;
+    --alerte:#FB7185;
+    --shadow:0 2px 4px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --bg:#F2F3FD; --surface:#FFFFFF; --surface-2:#ECEDFB; --ink:#16152E; --ink-muted:#5C5B7D;
+    --border:#E1E2F6; --accent:#5B3DF5; --accent-2:#00A6C4; --accent-3:#8B18E8; --accent-ink:#FFFFFF;
+    --glow:rgba(91,61,245,.30);
+    --repos-bg:rgba(14,165,233,.15);  --repos-ink:#0369A1;
+    --conge-bg:rgba(16,185,129,.18);  --conge-ink:#047857;
+    --ferie-bg:rgba(245,158,11,.22);  --ferie-ink:#A94E06;
+    --alerte:#D22D2D;
+    --shadow:0 2px 4px rgba(22,21,46,.05), 0 10px 24px rgba(22,21,46,.07);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  /* Garde-fou : sans cette regle les champs retombent sur le noir du
+     navigateur, invisible en theme sombre. */
+  button,input,select,textarea{color:inherit;font-family:inherit;}
+  body{
+    margin:0;color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;
+    background:var(--bg);
+    background-image:
+      radial-gradient(900px 420px at 110% -8%, var(--glow), transparent 62%),
+      radial-gradient(760px 380px at -18% 4%, rgba(0,166,196,.16), transparent 60%);
+    background-attachment:fixed;
+  }
+  .app{
+    max-width:560px;margin:0 auto;min-height:100dvh;
+    display:flex;flex-direction:column;padding-bottom:84px;position:relative;
+  }
+
+  /* ---------- Barre du haut ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:.65rem;padding:1rem 1rem .7rem;
+    position:sticky;top:0;z-index:5;
+    background:linear-gradient(var(--bg) 72%, transparent);
+  }
+  .brand-mark{
+    width:42px;height:42px;border-radius:14px;color:#FFFFFF;flex-shrink:0;
+    background:linear-gradient(140deg,var(--accent),var(--accent-3) 55%,var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow-accent);
+  }
+  .brand-mark svg{width:23px;height:23px;}
+  .topbar h1{
+    font-size:1.5rem;font-weight:900;margin:0;letter-spacing:-.01em;line-height:1.05;
+    text-transform:uppercase;color:var(--accent);
+  }
+  @supports (-webkit-background-clip:text){
+    .topbar h1{
+      background:linear-gradient(95deg,var(--accent),var(--accent-3) 60%,var(--accent-2));
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+  }
+  .topbar p{margin:.05rem 0 0;font-size:.74rem;color:var(--ink-muted);font-weight:600;}
+  .topbar .spacer{flex:1;}
+  .icone-btn{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:13px;
+    width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--ink-muted);flex-shrink:0;box-shadow:var(--shadow);
+  }
+  .icone-btn:active{transform:scale(.94);}
+  .icone-btn svg{width:19px;height:19px;}
+
+  main{flex:1;padding:.1rem 1rem 1rem;}
+  .view{display:none;}
+  .view.active{display:block;animation:apparait .22s ease-out;}
+  @keyframes apparait{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* ---------- Navigation du mois ---------- */
+  .mois-nav{
+    display:flex;align-items:center;gap:.4rem;margin-bottom:.8rem;
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:.4rem .45rem;box-shadow:var(--shadow);
+  }
+  .mois-nav button.fleche{
+    background:var(--surface-2);border:0;font-size:1.35rem;line-height:1;font-weight:800;
+    width:42px;height:42px;border-radius:13px;cursor:pointer;color:var(--accent);
+  }
+  .mois-nav button.fleche:active{transform:scale(.92);}
+  .mois-titre{flex:1;text-align:center;min-width:0;}
+  .mois-titre strong{display:block;font-size:1.1rem;font-weight:800;text-transform:capitalize;letter-spacing:-.01em;}
+  .mois-titre span{display:block;font-size:.73rem;color:var(--ink-muted);font-weight:600;}
+  .btn-aujourdhui{
+    display:block;margin:-.35rem auto .85rem;cursor:pointer;
+    background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);
+    font-size:.78rem;font-weight:800;padding:.3rem .8rem;border-radius:999px;
+  }
+  .btn-aujourdhui[hidden]{display:none;}
+
+  /* ---------- Cartes de resume ---------- */
+  .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem;}
+  .stat-card{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:.8rem .85rem;box-shadow:var(--shadow);
+  }
+  .stat-card .lbl{
+    display:block;font-size:.68rem;color:var(--ink-muted);text-transform:uppercase;
+    letter-spacing:.06em;font-weight:800;
+  }
+  .stat-card .val{
+    display:block;font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;
+    margin-top:.1rem;letter-spacing:-.02em;
+  }
+  .stat-card .sous{display:block;font-size:.73rem;color:var(--ink-muted);margin-top:.15rem;font-weight:600;}
+  .stat-card.large{grid-column:1 / -1;position:relative;overflow:hidden;}
+  .stat-card.large .val{font-size:2.5rem;line-height:1.05;}
+  .stat-card.accent{border-color:transparent;box-shadow:var(--shadow),var(--shadow-accent);}
+  .stat-card.accent .val{color:var(--accent);}
+  @supports (-webkit-background-clip:text){
+    .stat-card.accent .val{
+      background:linear-gradient(95deg,var(--accent),var(--accent-3) 55%,var(--accent-2));
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+  }
+
+  /* ---------- Semaines ---------- */
+  .semaine{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:.85rem;overflow:hidden;
+  }
+  .sem-head{padding:.7rem .85rem .6rem;background:var(--surface-2);border-bottom:1.5px solid var(--border);}
+  .sem-head .haut{display:flex;align-items:center;gap:.6rem;}
+  .sem-head .t{flex:1;min-width:0;}
+  .sem-head strong{display:flex;align-items:center;gap:.4rem;font-size:.92rem;font-weight:800;}
+  .sem-head span{display:block;font-size:.72rem;color:var(--ink-muted);font-weight:600;}
+  .sem-head .num-semaine{
+    display:inline-block;background:var(--accent);color:var(--accent-ink);border-radius:999px;
+    padding:.1rem .55rem;font-size:.72rem;font-weight:900;letter-spacing:.02em;
+  }
+  .sem-total{font-size:1.25rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--accent);white-space:nowrap;letter-spacing:-.02em;}
+  .jauge{
+    height:9px;border-radius:999px;margin-top:.55rem;overflow:hidden;
+    background:rgba(120,120,160,.22);
+  }
+  .jauge i{
+    display:block;height:100%;border-radius:999px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-3) 55%,var(--accent-2));
+    transition:width .35s ease-out;
+  }
+  .jauge-txt{font-size:.7rem;color:var(--ink-muted);margin-top:.3rem;font-weight:700;}
+  .jauge-txt.atteint{color:var(--accent);}
+
+  .jour{
+    display:grid;grid-template-columns:4.4rem 1fr auto;align-items:center;gap:.5rem;
+    width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid var(--border);
+    padding:.6rem .85rem;cursor:pointer;font-size:.87rem;color:inherit;
+    border-left:4px solid transparent;
+  }
+  .jours > .jour:first-child{border-top:0;}
+  .jour:active{background:var(--surface-2);}
+  .jour.ouvert{background:var(--surface-2);border-left-color:var(--accent);}
+  .jour.hors-mois{opacity:.5;}
+  .jour .j-nom{font-weight:800;font-variant-numeric:tabular-nums;}
+  .jour .j-nom em{display:block;font-style:normal;font-size:.66rem;color:var(--ink-muted);font-weight:600;}
+  /* Sur un ecran etroit la ligne passe a deux lignes plutot que d'etre coupee :
+     mieux vaut une rangee un peu plus haute qu'une pause invisible. */
+  .jour .j-detail{
+    font-size:.77rem;color:var(--ink-muted);font-variant-numeric:tabular-nums;font-weight:600;
+    line-height:1.35;overflow-wrap:anywhere;
+  }
+  .jour .j-detail.vide{font-style:italic;opacity:.8;}
+  .jour .j-total{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.95rem;}
+  .jour.week-end .j-nom{color:var(--ink-muted);}
+  .jour.aujourdhui{border-left-color:var(--accent-2);}
+  .jour.aujourdhui .j-nom{color:var(--accent);}
+  .jour.aujourdhui .j-nom strong::after{
+    content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:var(--accent-2);margin-left:.25rem;vertical-align:.12em;
+  }
+  .puce{
+    display:inline-block;padding:.14rem .55rem;border-radius:999px;font-size:.75rem;font-weight:800;
+  }
+  .puce.repos{background:var(--repos-bg);color:var(--repos-ink);}
+  .puce.conge{background:var(--conge-bg);color:var(--conge-ink);}
+  .puce.ferie{background:var(--ferie-bg);color:var(--ferie-ink);}
+  .anomalie{color:var(--alerte);font-weight:700;}
+  .sem-pied{
+    display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+    padding:.55rem .85rem;border-top:1.5px solid var(--border);background:var(--surface-2);
+  }
+  .sem-pied .note{flex:1;font-size:.71rem;color:var(--ink-muted);min-width:8rem;line-height:1.45;font-weight:600;}
+
+  /* ---------- Editeur de journee ---------- */
+  .editeur{border-top:1.5px solid var(--border);background:var(--surface-2);padding:.75rem .85rem .85rem;}
+  .segment{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-bottom:.75rem;}
+  .segment button{
+    display:flex;flex-direction:column;align-items:center;gap:.1rem;
+    padding:.45rem .1rem .4rem;font-size:.72rem;font-weight:800;
+    border:1.5px solid var(--border);background:var(--surface);border-radius:13px;cursor:pointer;
+  }
+  .segment button .emo{font-size:1.05rem;line-height:1.1;}
+  .segment button:active{transform:scale(.95);}
+  .segment button.on{
+    background:linear-gradient(135deg,var(--accent),var(--accent-3));
+    border-color:transparent;color:#FFFFFF;box-shadow:var(--shadow-accent);
+  }
+  .ligne-champ{display:grid;grid-template-columns:5.6rem 1fr 1fr;gap:.4rem;align-items:center;margin-bottom:.45rem;}
+  .ligne-champ > span{font-size:.78rem;color:var(--ink-muted);font-weight:800;}
+  .ligne-champ.courte{grid-template-columns:5.6rem 1fr;}
+  select,input[type="number"],input[type="text"]{
+    width:100%;padding:.55rem .6rem;border:1.5px solid var(--border);border-radius:13px;
+    background:var(--surface);font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
+  }
+  select:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .edit-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.65rem;}
+  .edit-total{margin-top:.65rem;font-size:.8rem;color:var(--ink-muted);font-weight:600;}
+  .edit-total strong{color:var(--ink);font-size:1.25rem;font-weight:900;}
+  .edit-total.anomalie strong{color:var(--alerte);}
+
+  /* ---------- Boutons ---------- */
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent-3));
+    color:#FFFFFF;border:0;border-radius:999px;box-shadow:var(--shadow-accent);
+    padding:.62rem 1.05rem;font-size:.9rem;font-weight:800;cursor:pointer;
+  }
+  .btn-primary:active{transform:translateY(1px) scale(.985);}
+  .btn-line{
+    background:var(--surface);color:var(--ink);border:1.5px solid var(--border);border-radius:999px;
+    padding:.45rem .8rem;font-size:.79rem;font-weight:800;cursor:pointer;
+  }
+  .btn-line:active{transform:scale(.96);background:var(--surface-2);}
+  .btn-line.danger{color:var(--alerte);border-color:var(--alerte);}
+  .btn-large{width:100%;padding:.85rem;font-size:1rem;}
+
+  /* ---------- Cartes reglages / recap ---------- */
+  .carte{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:.95rem;box-shadow:var(--shadow);margin-bottom:.85rem;
+  }
+  .carte h2{font-size:1.02rem;margin:0 0 .55rem;font-weight:900;letter-spacing:-.01em;}
+  .carte p.aide{font-size:.78rem;color:var(--ink-muted);margin:.1rem 0 .75rem;line-height:1.55;font-weight:600;}
+  .champ{display:block;margin-bottom:.65rem;}
+  .champ .lbl{display:block;font-size:.76rem;color:var(--ink-muted);margin-bottom:.25rem;font-weight:800;}
+  .tableau{width:100%;border-collapse:collapse;font-size:.86rem;}
+  .tableau th{
+    text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-muted);font-weight:800;padding:.3rem 0;border-bottom:1.5px solid var(--border);
+  }
+  .tableau td{padding:.45rem 0;border-bottom:1.5px solid var(--border);font-variant-numeric:tabular-nums;font-weight:700;}
+  .tableau td:last-child,.tableau th:last-child{text-align:right;font-weight:900;}
+  .tableau tr:last-child td{border-bottom:0;}
+  .tableau td .sous{display:block;font-size:.71rem;color:var(--ink-muted);font-weight:600;}
+  .tableau td .etoile{color:var(--accent);}
+  .repartition{display:flex;flex-wrap:wrap;gap:.45rem;}
+  .repartition .puce{padding:.28rem .7rem;font-size:.8rem;}
+
+  /* ---------- Bandeaux ---------- */
+  .rappel,.bandeau{
+    display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
+    margin:0 1rem .75rem;padding:.8rem .85rem;border-radius:var(--radius);
+    background:var(--surface);border:1.5px solid transparent;
+    box-shadow:var(--shadow),var(--shadow-accent);
+    background-image:linear-gradient(var(--surface),var(--surface)),
+                     linear-gradient(135deg,var(--accent),var(--accent-2));
+    background-origin:border-box;background-clip:padding-box,border-box;
+  }
+  .rappel[hidden],.bandeau[hidden]{display:none;}
+  .rappel-texte{flex:1;min-width:11rem;display:flex;flex-direction:column;gap:.15rem;}
+  .rappel-texte strong{font-size:.9rem;font-weight:900;}
+  .rappel-texte span{font-size:.78rem;color:var(--ink-muted);line-height:1.45;font-weight:600;}
+  .rappel-actions{display:flex;gap:.45rem;}
+  .derniere-sauvegarde{font-size:.78rem;color:var(--ink-muted);margin:.1rem 0 .75rem;font-weight:700;}
+  .derniere-sauvegarde strong{color:var(--ink);font-weight:900;}
+  .derniere-sauvegarde.alerte strong{color:var(--alerte);}
+
+  /* ---------- Barre d'onglets ---------- */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:6;
+    display:flex;max-width:560px;margin:0 auto;
+    background:var(--surface);border-top:1.5px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar button{
+    flex:1;background:transparent;border:0;padding:.45rem .2rem .55rem;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:.2rem;
+    font-size:.68rem;font-weight:800;color:var(--ink-muted);
+  }
+  .tabbar button svg{
+    width:20px;height:20px;padding:.3rem .95rem;border-radius:999px;box-sizing:content-box;
+    transition:background .18s ease-out;
+  }
+  .tabbar button.active{color:var(--accent);}
+  .tabbar button.active svg{
+    background:linear-gradient(135deg,var(--accent),var(--accent-3));color:#FFFFFF;
+    box-shadow:var(--shadow-accent);
+  }
+
+  /* ---------- Fenetre de confirmation ---------- */
+  .modal-fond{
+    position:fixed;inset:0;z-index:30;background:rgba(9,8,22,.62);
+    display:flex;align-items:center;justify-content:center;padding:1.2rem;
+  }
+  .modal{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:1.1rem;max-width:22rem;width:100%;
+  }
+  .modal p{margin:0 0 .95rem;font-size:.88rem;line-height:1.55;font-weight:600;}
+  .modal-actions{display:flex;gap:.5rem;justify-content:flex-end;}
+
+  /* ---------- Message eclair ---------- */
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:20;
+    background:var(--ink);color:var(--bg);padding:.65rem 1rem;border-radius:999px;
+    font-size:.84rem;font-weight:800;box-shadow:var(--shadow);max-width:90vw;text-align:center;
+  }
+  .toast[hidden]{display:none;}
+  .toast.err{background:var(--alerte);color:#FFFFFF;}
+
+  .vide-message{text-align:center;color:var(--ink-muted);font-size:.85rem;padding:1.4rem .8rem;line-height:1.6;}
+  .pied-page{font-size:.72rem;color:var(--ink-muted);text-align:center;padding:.4rem 0 1rem;line-height:1.6;font-weight:600;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5h4"></path>
+      </svg>
+    </div>
+    <div>
+      <h1>Mes heures</h1>
+      <p>Semaine par semaine, mois par mois</p>
+    </div>
+    <div class="spacer"></div>
+    <button type="button" class="icone-btn" id="themeBtn" title="Changer le thème" aria-label="Changer le thème">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+      </svg>
+    </button>
+  </header>
+
+  <div id="bandeauMaj" class="bandeau" hidden>
+    <div class="rappel-texte">
+      <strong>Une nouvelle version de l'appli est prête</strong>
+      <span>Recharge la page pour en profiter.</span>
+    </div>
+    <div class="rappel-actions">
+      <button type="button" class="btn-primary" id="majRecharger">Recharger</button>
+    </div>
+  </div>
+
+  <div id="rappelSauvegarde" class="rappel" hidden>
+    <div class="rappel-texte">
+      <strong id="rappelTitre"></strong>
+      <span id="rappelDetail"></span>
+    </div>
+    <div class="rappel-actions">
+      <button type="button" class="btn-line" id="rappelPlusTard">Plus tard</button>
+      <button type="button" class="btn-primary" id="rappelSauver">Sauvegarder</button>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ======================= SAISIE ======================= -->
+    <section class="view active" id="vueSemaines">
+      <div class="mois-nav">
+        <button type="button" class="fleche" data-pas="-1" aria-label="Mois précédent">&#8249;</button>
+        <div class="mois-titre">
+          <strong class="mois-label"></strong>
+          <span class="mois-sous"></span>
+        </div>
+        <button type="button" class="fleche" data-pas="1" aria-label="Mois suivant">&#8250;</button>
+      </div>
+      <button type="button" class="btn-aujourdhui" data-aujourdhui hidden>Revenir au mois en cours</button>
+      <div id="listeSemaines"></div>
+      <p class="pied-page">Touche une journée pour saisir ou modifier ses horaires.</p>
+    </section>
+
+    <!-- ======================= RÉCAP DU MOIS ======================= -->
+    <section class="view" id="vueMois">
+      <div class="mois-nav">
+        <button type="button" class="fleche" data-pas="-1" aria-label="Mois précédent">&#8249;</button>
+        <div class="mois-titre">
+          <strong class="mois-label"></strong>
+          <span class="mois-sous"></span>
+        </div>
+        <button type="button" class="fleche" data-pas="1" aria-label="Mois suivant">&#8250;</button>
+      </div>
+      <button type="button" class="btn-aujourdhui" data-aujourdhui hidden>Revenir au mois en cours</button>
+
+      <div class="stats-row">
+        <div class="stat-card large accent">
+          <span class="lbl">Total du mois</span>
+          <span class="val" id="recapTotal">0 h</span>
+          <span class="sous" id="recapTotalDecimal"></span>
+        </div>
+        <div class="stat-card">
+          <span class="lbl">Jours travaillés</span>
+          <span class="val" id="recapJours">0</span>
+          <span class="sous" id="recapMoyenne"></span>
+        </div>
+        <div class="stat-card">
+          <span class="lbl">Pauses déduites</span>
+          <span class="val" id="recapPauses">0 h</span>
+          <span class="sous">sur le mois</span>
+        </div>
+      </div>
+
+      <div class="carte">
+        <h2>Absences du mois</h2>
+        <div class="repartition" id="recapAbsences"></div>
+      </div>
+
+      <div class="carte">
+        <h2>Détail par semaine</h2>
+        <table class="tableau">
+          <thead><tr><th>Semaine</th><th>Heures</th></tr></thead>
+          <tbody id="recapSemaines"></tbody>
+        </table>
+      </div>
+
+      <div class="carte">
+        <h2>Sortir le mois en PDF</h2>
+        <p class="aide">Un document avec le détail de chaque journée, les totaux par semaine et le
+          total du mois. Pratique à imprimer ou à envoyer.</p>
+        <button type="button" class="btn-primary btn-large" id="btnPdf">Exporter en PDF</button>
+      </div>
+    </section>
+
+    <!-- ======================= RÉGLAGES ======================= -->
+    <section class="view" id="vueReglages">
+
+      <div class="carte">
+        <h2>Horaires habituels</h2>
+        <p class="aide">Ce sont les horaires proposés par le bouton « Remplir la semaine », et par le
+          bouton « Habituels » quand tu saisis une journée.</p>
+        <div class="ligne-champ">
+          <span>Matin</span>
+          <select id="habM1"></select>
+          <select id="habM2"></select>
+        </div>
+        <div class="ligne-champ">
+          <span>Après-midi</span>
+          <select id="habA1"></select>
+          <select id="habA2"></select>
+        </div>
+        <div class="ligne-champ courte">
+          <span>Pause (min)</span>
+          <input type="number" id="habPause" min="0" max="600" step="5" inputmode="numeric">
+        </div>
+        <p class="aide" id="habTotal"></p>
+      </div>
+
+      <div class="carte">
+        <h2>Objectif de la semaine 🔥</h2>
+        <p class="aide">Une jauge se remplit au fil de la semaine. Quand l'objectif est atteint,
+          elle passe au violet et la semaine gagne sa petite flamme.</p>
+        <label class="champ">
+          <span class="lbl">Heures visées par semaine</span>
+          <select id="objectifSemaine"></select>
+        </label>
+      </div>
+
+      <div class="carte">
+        <h2>Sauvegarde de mes données</h2>
+        <p class="aide">Tes heures sont enregistrées toutes seules dans ce navigateur, sur cet appareil
+          uniquement : rien n'est envoyé sur internet. Une sauvegarde est un petit fichier à garder de
+          côté ; elle te protège si tu changes de téléphone ou si tu vides ton navigateur.</p>
+        <p class="derniere-sauvegarde" id="derniereSauvegarde"></p>
+        <label class="champ">
+          <span class="lbl">Me le rappeler</span>
+          <select id="rappelFrequence">
+            <option value="7">Une fois par semaine</option>
+            <option value="14">Toutes les deux semaines</option>
+            <option value="30">Une fois par mois</option>
+            <option value="0">Jamais</option>
+          </select>
+        </label>
+        <div class="edit-actions">
+          <button type="button" class="btn-primary" id="btnSauvegarder">Sauvegarder maintenant</button>
+          <button type="button" class="btn-line" id="btnRestaurer">Restaurer une sauvegarde</button>
+        </div>
+        <input type="file" id="fichierRestauration" accept="application/json,.json" hidden>
+      </div>
+
+      <div class="carte">
+        <h2>Sur le PDF</h2>
+        <label class="champ">
+          <span class="lbl">Nom à faire figurer en haut du document (facultatif)</span>
+          <input type="text" id="nomPdf" maxlength="60" placeholder="Ex. : Amandine C.">
+        </label>
+        <label class="champ">
+          <span class="lbl">Ligne complémentaire (facultatif)</span>
+          <input type="text" id="sousTitrePdf" maxlength="60" placeholder="Ex. : nom de l'employeur">
+        </label>
+      </div>
+
+      <div class="carte">
+        <h2>Affichage</h2>
+        <label class="champ">
+          <span class="lbl">Thème</span>
+          <select id="choixTheme">
+            <option value="auto">Comme mon téléphone</option>
+            <option value="light">Clair</option>
+            <option value="dark">Sombre</option>
+          </select>
+        </label>
+        <label class="champ">
+          <span class="lbl">Heures proposées dans les listes déroulantes</span>
+          <select id="choixPlage">
+            <option value="0">Toute la journée (00:00 à 23:45)</option>
+            <option value="5">À partir de 05:00</option>
+            <option value="6">À partir de 06:00</option>
+            <option value="7">À partir de 07:00</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="pied-page">
+        Mes heures &#183; version <span id="numVersion">1.0</span><br>
+        Données gardées sur cet appareil, jamais envoyées ailleurs.
+      </p>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button type="button" class="active" data-vue="vueSemaines">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path>
+      </svg>
+      Semaines
+    </button>
+    <button type="button" data-vue="vueMois">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+      </svg>
+      Mois
+    </button>
+    <button type="button" data-vue="vueReglages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"></path>
+      </svg>
+      Réglages
+    </button>
+  </nav>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   Mes heures de travail — tout tient dans ce fichier.
+   Les données restent dans le navigateur de l'appareil (localStorage) :
+   rien n'est envoyé sur internet. La sauvegarde est un fichier .json que
+   l'utilisatrice range où elle veut.
+   ========================================================================= */
+
+var VERSION_APP = "1.0";
+var CLE_DONNEES = "heures_v1";
+var CLE_SAUVEGARDE = "heures_sauvegarde_v1";
+var PAS_MINUTES = 15;              // écart entre deux heures des listes déroulantes
+
+var JOURS_COURTS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+var MOIS_LONGS = ["janvier","février","mars","avril","mai","juin","juillet",
+                  "août","septembre","octobre","novembre","décembre"];
+var MOIS_COURTS = ["janv.","févr.","mars","avr.","mai","juin","juil.",
+                   "août","sept.","oct.","nov.","déc."];
+
+var TYPES = [
+  { cle:"travail", libelle:"Travail", emoji:"💼" },
+  { cle:"repos",   libelle:"Repos",   emoji:"😴" },
+  { cle:"conge",   libelle:"Congé",   emoji:"🌴" },
+  { cle:"ferie",   libelle:"Férié",   emoji:"🎉" }
+];
+// Le libellé reste sans emoji : le PDF ne sait pas les écrire.
+function libelleType(cle){
+  for (var i=0;i<TYPES.length;i++) if (TYPES[i].cle===cle) return TYPES[i].libelle;
+  return "Travail";
+}
+function emojiType(cle){
+  for (var i=0;i<TYPES.length;i++) if (TYPES[i].cle===cle) return TYPES[i].emoji;
+  return "";
+}
+
+/* ---------------------------------------------------------------- Outils */
+
+function pad2(n){ return (n<10?"0":"") + n; }
+function $(id){ return document.getElementById(id); }
+
+function echapper(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Dates manipulées à midi : on évite ainsi les surprises des changements d'heure.
+function dateIso(d){ return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
+function isoDate(s){ var p = s.split("-"); return new Date(+p[0], +p[1]-1, +p[2], 12, 0, 0); }
+function plusJours(d, n){ var x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
+function lundiDe(d){ var x = new Date(d.getTime()); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; }
+
+// Numéro de semaine ISO (celui des calendriers français).
+function numeroSemaine(d){
+  var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() - ((t.getDay()+6)%7) + 3);          // jeudi de la semaine
+  var jeudi1 = new Date(t.getFullYear(), 0, 4);
+  jeudi1.setDate(jeudi1.getDate() - ((jeudi1.getDay()+6)%7) + 3);
+  return 1 + Math.round((t - jeudi1) / (7*24*3600*1000));
+}
+
+function hm2min(s){
+  if (!s || typeof s !== "string" || s.indexOf(":") < 0) return null;
+  var p = s.split(":"), h = parseInt(p[0],10), m = parseInt(p[1],10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h*60 + m;
+}
+function min2hm(m){ return pad2(Math.floor(m/60)) + ":" + pad2(m%60); }
+
+// 465 -> "7 h 45"   420 -> "7 h"   0 -> "0 h"
+function texteDuree(min){
+  min = Math.max(0, Math.round(min));
+  var h = Math.floor(min/60), r = min%60;
+  return r ? (h + " h " + pad2(r)) : (h + " h");
+}
+function texteDecimal(min){
+  return (min/60).toFixed(2).replace(".", ",") + " h";
+}
+
+/* ------------------------------------------------------- Données stockées */
+
+function bornerObjectif(v){ return Math.max(0, Math.min(4200, parseInt(v, 10) || 0)); }
+
+function reglagesParDefaut(){
+  return {
+    hab: { m1:"09:00", m2:"12:30", a1:"13:30", a2:"17:00", p:0 },
+    objectif: 2100,                       // 35 h par semaine
+    nom: "", sousTitre: "", theme: "auto", plage: 0
+  };
+}
+
+var enregistrementPossible = true;
+
+function charger(){
+  var vide = { jours:{}, reglages:reglagesParDefaut() };
+  try {
+    var brut = localStorage.getItem(CLE_DONNEES);
+    if (!brut) return vide;
+    var o = JSON.parse(brut);
+    if (!o || typeof o !== "object") return vide;
+    var r = reglagesParDefaut();
+    if (o.reglages && typeof o.reglages === "object") {
+      if (o.reglages.hab && typeof o.reglages.hab === "object") {
+        r.hab.m1 = o.reglages.hab.m1 || ""; r.hab.m2 = o.reglages.hab.m2 || "";
+        r.hab.a1 = o.reglages.hab.a1 || ""; r.hab.a2 = o.reglages.hab.a2 || "";
+        r.hab.p  = Math.max(0, parseInt(o.reglages.hab.p,10) || 0);
+      }
+      if (typeof o.reglages.nom === "string") r.nom = o.reglages.nom;
+      if (typeof o.reglages.sousTitre === "string") r.sousTitre = o.reglages.sousTitre;
+      if (typeof o.reglages.theme === "string") r.theme = o.reglages.theme;
+      r.plage = Math.max(0, Math.min(23, parseInt(o.reglages.plage,10) || 0));
+      if (o.reglages.objectif != null) r.objectif = bornerObjectif(o.reglages.objectif);
+    }
+    return {
+      jours: (o.jours && typeof o.jours === "object") ? o.jours : {},
+      reglages: r
+    };
+  } catch(e){ return vide; }
+}
+
+var D = charger();
+
+function sauver(){
+  try {
+    localStorage.setItem(CLE_DONNEES, JSON.stringify(D));
+    enregistrementPossible = true;
+  } catch(e){
+    enregistrementPossible = false;
+    toast("Cet appareil n'enregistre pas les données. Fais une sauvegarde avant de fermer.", true);
+  }
+}
+
+function getJour(iso){ return D.jours[iso] || null; }
+
+function journeeVide(j){
+  if (!j) return true;
+  if (j.t && j.t !== "travail") return false;
+  return !j.m1 && !j.m2 && !j.a1 && !j.a2 && !(j.p > 0);
+}
+
+function setJour(iso, j){
+  if (journeeVide(j)) delete D.jours[iso];
+  else D.jours[iso] = j;
+  sauver();
+}
+
+/* ------------------------------------------------------------- Calculs */
+
+function bloc(a, b){
+  var x = hm2min(a), y = hm2min(b);
+  if (x === null || y === null) return 0;
+  return y > x ? y - x : 0;
+}
+function minutesBrutes(j){ return bloc(j.m1, j.m2) + bloc(j.a1, j.a2); }
+
+function minutesJour(j){
+  if (!j || (j.t && j.t !== "travail")) return 0;
+  return Math.max(0, minutesBrutes(j) - (j.p || 0));
+}
+function pauseJour(j){
+  if (!j || (j.t && j.t !== "travail")) return 0;
+  return Math.min(j.p || 0, minutesBrutes(j));
+}
+
+// Renvoie un message si la saisie est incohérente, sinon une chaîne vide.
+function anomalieJour(j){
+  if (!j || (j.t && j.t !== "travail")) return "";
+  if ((j.m1 && !j.m2) || (!j.m1 && j.m2)) return "Il manque une heure au matin.";
+  if ((j.a1 && !j.a2) || (!j.a1 && j.a2)) return "Il manque une heure à l'après-midi.";
+  if (j.m1 && j.m2 && hm2min(j.m2) <= hm2min(j.m1)) return "Le matin se termine avant d'avoir commencé.";
+  if (j.a1 && j.a2 && hm2min(j.a2) <= hm2min(j.a1)) return "L'après-midi se termine avant d'avoir commencé.";
+  if (j.m2 && j.a1 && hm2min(j.a1) < hm2min(j.m2)) return "L'après-midi commence avant la fin du matin.";
+  var brut = minutesBrutes(j);
+  if (brut > 0 && (j.p || 0) >= brut) return "La pause est plus longue que le temps travaillé.";
+  if (brut === 0 && (j.p || 0) > 0) return "Une pause est notée, mais aucun horaire.";
+  return "";
+}
+
+// Les 4, 5 ou 6 semaines (lundi -> dimanche) qui touchent le mois affiché.
+function semainesDuMois(annee, mois){
+  var dernier = new Date(annee, mois+1, 0, 12);
+  var d = lundiDe(new Date(annee, mois, 1, 12));
+  var out = [];
+  while (d.getTime() <= dernier.getTime()){
+    var jours = [];
+    for (var i=0;i<7;i++){
+      var x = plusJours(d, i);
+      jours.push({
+        iso: dateIso(x), date: x, jsJour: i,
+        dansMois: x.getMonth() === mois && x.getFullYear() === annee
+      });
+    }
+    out.push({ lundi: d, numero: numeroSemaine(d), jours: jours });
+    d = plusJours(d, 7);
+  }
+  return out;
+}
+
+// Totaux d'un mois : heures, jours travaillés, absences, pauses.
+function bilanMois(annee, mois){
+  var b = { minutes:0, pauses:0, joursTravailles:0, repos:0, conge:0, ferie:0, anomalies:0, saisis:0 };
+  var dernier = new Date(annee, mois+1, 0, 12).getDate();
+  for (var n=1; n<=dernier; n++){
+    var j = getJour(dateIso(new Date(annee, mois, n, 12)));
+    if (!j) continue;
+    b.saisis++;
+    if (anomalieJour(j)) b.anomalies++;
+    var t = j.t || "travail";
+    if (t === "repos") b.repos++;
+    else if (t === "conge") b.conge++;
+    else if (t === "ferie") b.ferie++;
+    else {
+      var m = minutesJour(j);
+      b.minutes += m;
+      b.pauses += pauseJour(j);
+      if (m > 0) b.joursTravailles++;
+    }
+  }
+  return b;
+}
+
+function minutesSemaine(sem, filtreMois){
+  var total = 0;
+  for (var i=0;i<7;i++){
+    var jr = sem.jours[i];
+    if (filtreMois && !jr.dansMois) continue;
+    total += minutesJour(getJour(jr.iso));
+  }
+  return total;
+}
+
+/* ---------------------------------------------------- Écran des semaines */
+
+var aujourdhui = new Date();
+var isoAujourdhui = dateIso(aujourdhui);
+var moisCourant = { a: aujourdhui.getFullYear(), m: aujourdhui.getMonth() };
+var jourOuvert = null;                 // date ISO de la journée en cours de saisie
+
+var cacheOptions = null, cacheOptionsPlage = -1;
+
+// Liste des heures, de 15 en 15 minutes. Quand la liste démarre à 5 h, les
+// heures de nuit restent joignables dans un groupe placé à la fin.
+function optionsHeures(){
+  if (cacheOptions !== null && cacheOptionsPlage === D.reglages.plage) return cacheOptions;
+  var debut = D.reglages.plage * 60, m, v;
+  var h = '<option value="">&#8212;</option>';
+  for (m = debut; m < 24*60; m += PAS_MINUTES){ v = min2hm(m); h += '<option value="'+v+'">'+v+'</option>'; }
+  if (debut > 0){
+    h += '<optgroup label="Nuit">';
+    for (m = 0; m < debut; m += PAS_MINUTES){ v = min2hm(m); h += '<option value="'+v+'">'+v+'</option>'; }
+    h += '</optgroup>';
+  }
+  cacheOptions = h; cacheOptionsPlage = D.reglages.plage;
+  return h;
+}
+
+function selectHeures(champ, valeur){
+  var cible = 'value="' + (valeur || "") + '"';
+  return '<select data-champ="' + champ + '">'
+       + optionsHeures().replace(cible, cible + " selected")
+       + '</select>';
+}
+
+function plageTexte(a, b){
+  if (a.getTime() === b.getTime()) return "le " + a.getDate() + " " + MOIS_LONGS[a.getMonth()];
+  if (a.getMonth() === b.getMonth()) return "du " + a.getDate() + " au " + b.getDate() + " " + MOIS_LONGS[b.getMonth()];
+  return "du " + a.getDate() + " " + MOIS_LONGS[a.getMonth()] + " au " + b.getDate() + " " + MOIS_LONGS[b.getMonth()];
+}
+
+function ligneJour(jr){
+  var j = getJour(jr.iso);
+  var t = j ? (j.t || "travail") : null;
+  var classes = "jour";
+  if (!jr.dansMois) classes += " hors-mois";
+  if (jr.jsJour >= 5) classes += " week-end";
+  if (jr.iso === isoAujourdhui) classes += " aujourdhui";
+  if (jr.iso === jourOuvert) classes += " ouvert";
+
+  var detail, total = '<span class="j-total"></span>';
+  if (!j){
+    detail = '<span class="j-detail vide">à saisir</span>';
+  } else if (t !== "travail"){
+    detail = '<span class="j-detail"><span class="puce ' + t + '">'
+           + emojiType(t) + " " + libelleType(t) + '</span></span>';
+    total = '<span class="j-total">0 h</span>';
+  } else {
+    var anomalie = anomalieJour(j), bouts = [];
+    if (j.m1 && j.m2) bouts.push(j.m1 + "&#8211;" + j.m2);
+    if (j.a1 && j.a2) bouts.push(j.a1 + "&#8211;" + j.a2);
+    if (j.p > 0) bouts.push("pause " + j.p + " min");
+    detail = '<span class="j-detail' + (anomalie ? " anomalie" : "") + '">'
+           + (anomalie ? anomalie : (bouts.join(" &#183; ") || "à saisir")) + '</span>';
+    total = '<span class="j-total">' + texteDuree(minutesJour(j)) + '</span>';
+  }
+
+  return '<button type="button" class="' + classes + '" data-jour="' + jr.iso + '">'
+       + '<span class="j-nom"><strong>' + JOURS_COURTS[jr.jsJour] + '</strong>'
+       + '<em>' + jr.date.getDate() + " " + MOIS_COURTS[jr.date.getMonth()] + '</em></span>'
+       + detail + total + '</button>';
+}
+
+function editeurJour(iso){
+  var j = getJour(iso) || { t:"travail" };
+  var t = j.t || "travail";
+  var h = '<div class="editeur" data-editeur="' + iso + '">';
+
+  h += '<div class="segment">';
+  for (var i=0;i<TYPES.length;i++){
+    h += '<button type="button" data-type="' + TYPES[i].cle + '"'
+       + (TYPES[i].cle === t ? ' class="on"' : '') + '>'
+       + '<span class="emo">' + TYPES[i].emoji + '</span>' + TYPES[i].libelle + '</button>';
+  }
+  h += '</div>';
+
+  if (t === "travail"){
+    h += '<div class="ligne-champ"><span>Matin</span>'
+       + selectHeures("m1", j.m1) + selectHeures("m2", j.m2) + '</div>';
+    h += '<div class="ligne-champ"><span>Après-midi</span>'
+       + selectHeures("a1", j.a1) + selectHeures("a2", j.a2) + '</div>';
+    h += '<div class="ligne-champ courte"><span>Pause (min)</span>'
+       + '<input type="number" data-champ="p" min="0" max="600" step="5" inputmode="numeric" value="'
+       + (j.p || 0) + '"></div>';
+    var anomalie = anomalieJour(j);
+    h += '<p class="edit-total' + (anomalie ? " anomalie" : "") + '"><strong>'
+       + texteDuree(minutesJour(j)) + '</strong> '
+       + (anomalie ? "&#8212; " + anomalie : "ce jour-là, pause déduite") + '</p>';
+    h += '<div class="edit-actions">'
+       + '<button type="button" class="btn-line" data-action="habituels">Horaires habituels</button>'
+       + '<button type="button" class="btn-line" data-action="veille">Copier la veille</button>'
+       + '<button type="button" class="btn-line" data-action="vider">Vider</button>'
+       + '<button type="button" class="btn-line" data-action="fermer">Terminé</button>'
+       + '</div>';
+  } else {
+    h += '<p class="edit-total"><strong>' + libelleType(t) + '</strong> &#8212; cette journée compte 0 h.</p>';
+    h += '<div class="edit-actions">'
+       + '<button type="button" class="btn-line" data-action="vider">Vider</button>'
+       + '<button type="button" class="btn-line" data-action="fermer">Terminé</button>'
+       + '</div>';
+  }
+  return h + '</div>';
+}
+
+function carteSemaine(sem){
+  var horsMois = 0, minutesHors = 0, moisVoisin = -1;
+  for (var i=0;i<7;i++){
+    if (!sem.jours[i].dansMois){
+      horsMois++;
+      moisVoisin = sem.jours[i].date.getMonth();
+      minutesHors += minutesJour(getJour(sem.jours[i].iso));
+    }
+  }
+
+  var totalSemaine = minutesSemaine(sem, false);
+  var objectif = D.reglages.objectif || 0;
+
+  var h = '<section class="semaine">'
+        + '<div class="sem-head"><div class="haut"><div class="t">'
+        + '<strong><span class="num-semaine">S' + sem.numero + '</span></strong>'
+        + '<span>' + plageTexte(sem.jours[0].date, sem.jours[6].date) + '</span></div>'
+        + '<div class="sem-total">' + texteDuree(totalSemaine) + '</div></div>';
+
+  if (objectif > 0){
+    var part = Math.min(100, Math.round(totalSemaine / objectif * 100));
+    var atteint = totalSemaine >= objectif;
+    h += '<div class="jauge"><i style="width:' + part + '%"></i></div>'
+       + '<div class="jauge-txt' + (atteint ? " atteint" : "") + '">'
+       + (atteint
+            ? "Objectif atteint \uD83D\uDD25"
+              + (totalSemaine > objectif ? " (+" + texteDuree(totalSemaine - objectif) + ")" : "")
+            : "Objectif " + texteDuree(objectif) + " \u00B7 encore " + texteDuree(objectif - totalSemaine))
+       + '</div>';
+  }
+
+  h += '</div><div class="jours">';
+
+  for (var k=0;k<7;k++){
+    h += ligneJour(sem.jours[k]);
+    if (sem.jours[k].iso === jourOuvert) h += editeurJour(jourOuvert);
+  }
+
+  var note = "Total de la semaine entière, du lundi au dimanche.";
+  if (horsMois > 0){
+    note = "Semaine à cheval : les jours de " + MOIS_LONGS[moisVoisin]
+         + " sont grisés et ne comptent pas dans le total de " + MOIS_LONGS[moisCourant.m]
+         + (minutesHors > 0 ? " (" + texteDuree(minutesHors) + " y sont saisies)" : "") + ".";
+  }
+
+  h += '</div><div class="sem-pied"><span class="note">' + note + '</span>'
+     + '<button type="button" class="btn-line" data-remplir="' + sem.jours[0].iso + '">Remplir la semaine</button>'
+     + '</div></section>';
+  return h;
+}
+
+function rendreSemaines(){
+  var y = window.scrollY;
+  var sems = semainesDuMois(moisCourant.a, moisCourant.m);
+  var h = "";
+  for (var i=0;i<sems.length;i++) h += carteSemaine(sems[i]);
+  $("listeSemaines").innerHTML = h;
+  window.scrollTo(0, y);
+}
+
+/* ------------------------------------------------- Écran du mois (récap) */
+
+function rendreMois(){
+  var b = bilanMois(moisCourant.a, moisCourant.m);
+  var sems = semainesDuMois(moisCourant.a, moisCourant.m);
+
+  $("recapTotal").textContent = texteDuree(b.minutes);
+  $("recapTotalDecimal").textContent = b.minutes
+    ? ("soit " + texteDecimal(b.minutes) + " en décimal")
+    : "aucune heure saisie pour l'instant";
+  $("recapJours").textContent = String(b.joursTravailles);
+  $("recapMoyenne").textContent = b.joursTravailles
+    ? ("soit " + texteDuree(Math.round(b.minutes / b.joursTravailles)) + " par jour en moyenne")
+    : "";
+  $("recapPauses").textContent = texteDuree(b.pauses);
+
+  var abs = "";
+  if (b.repos) abs += '<span class="puce repos">' + b.repos + (b.repos>1 ? " jours" : " jour") + ' de repos</span>';
+  if (b.conge) abs += '<span class="puce conge">' + b.conge + (b.conge>1 ? " jours" : " jour") + ' de congé</span>';
+  if (b.ferie) abs += '<span class="puce ferie">' + b.ferie + (b.ferie>1 ? " jours fériés" : " jour férié") + '</span>';
+  if (!abs) abs = '<span class="aide" style="font-size:.8rem;color:var(--ink-muted)">Aucun repos, congé ou jour férié noté ce mois-ci.</span>';
+  $("recapAbsences").innerHTML = abs;
+
+  var lignes = "";
+  for (var i=0;i<sems.length;i++){
+    var sem = sems[i];
+    var dans = [], mDansMois = minutesSemaine(sem, true);
+    for (var k=0;k<7;k++) if (sem.jours[k].dansMois) dans.push(sem.jours[k].date);
+    var acheval = dans.length < 7;
+    var objectifAtteint = !acheval && D.reglages.objectif > 0 && mDansMois >= D.reglages.objectif;
+    lignes += '<tr><td>Semaine ' + sem.numero
+            + '<span class="sous">' + plageTexte(dans[0], dans[dans.length-1])
+            + (acheval ? " (jours de ce mois seulement)" : "") + '</span></td>'
+            + '<td>' + texteDuree(mDansMois)
+            + (objectifAtteint ? ' <span class="etoile">\uD83D\uDD25</span>' : "") + '</td></tr>';
+  }
+  $("recapSemaines").innerHTML = lignes;
+}
+
+/* ------------------------------------------------ Entêtes de mois + vues */
+
+function rendreEnteteMois(){
+  var libelle = MOIS_LONGS[moisCourant.m] + " " + moisCourant.a;
+  var b = bilanMois(moisCourant.a, moisCourant.m);
+  var sous = b.saisis
+    ? (texteDuree(b.minutes) + " sur le mois &#183; " + b.joursTravailles
+       + (b.joursTravailles > 1 ? " jours travaillés" : " jour travaillé"))
+    : "Rien de saisi pour l'instant";
+  var labels = document.querySelectorAll(".mois-label");
+  var sousLabels = document.querySelectorAll(".mois-sous");
+  for (var i=0;i<labels.length;i++) labels[i].textContent = libelle;
+  for (var k=0;k<sousLabels.length;k++) sousLabels[k].innerHTML = sous;
+
+  var courant = (moisCourant.a === aujourdhui.getFullYear() && moisCourant.m === aujourdhui.getMonth());
+  var boutons = document.querySelectorAll("[data-aujourdhui]");
+  for (var n=0;n<boutons.length;n++) boutons[n].hidden = courant;
+}
+
+function rendreTout(){
+  rendreEnteteMois();
+  rendreSemaines();
+  rendreMois();
+  rendreRappel();
+}
+
+function changerMois(pas){
+  var d = new Date(moisCourant.a, moisCourant.m + pas, 1, 12);
+  moisCourant = { a: d.getFullYear(), m: d.getMonth() };
+  jourOuvert = null;
+  rendreTout();
+  window.scrollTo(0, 0);
+}
+
+/* ------------------------------------------------------- Interactions */
+
+function journeeModifiable(iso){
+  var j = getJour(iso);
+  return j ? { t:j.t||"travail", m1:j.m1||"", m2:j.m2||"", a1:j.a1||"", a2:j.a2||"", p:j.p||0 }
+           : { t:"travail", m1:"", m2:"", a1:"", a2:"", p:0 };
+}
+
+$("listeSemaines").addEventListener("click", function(ev){
+  var cible;
+
+  cible = ev.target.closest("[data-type]");
+  if (cible){
+    var isoT = cible.closest("[data-editeur]").getAttribute("data-editeur");
+    var jt = journeeModifiable(isoT);
+    jt.t = cible.getAttribute("data-type");
+    if (jt.t !== "travail"){ jt.m1 = jt.m2 = jt.a1 = jt.a2 = ""; jt.p = 0; }
+    setJour(isoT, jt);
+    rendreTout();
+    return;
+  }
+
+  cible = ev.target.closest("[data-action]");
+  if (cible){
+    var isoA = cible.closest("[data-editeur]").getAttribute("data-editeur");
+    var action = cible.getAttribute("data-action");
+    if (action === "fermer"){ jourOuvert = null; }
+    else if (action === "vider"){ setJour(isoA, null); }
+    else if (action === "habituels"){
+      var hab = D.reglages.hab;
+      setJour(isoA, { t:"travail", m1:hab.m1, m2:hab.m2, a1:hab.a1, a2:hab.a2, p:hab.p||0 });
+    }
+    else if (action === "veille"){
+      var veille = getJour(dateIso(plusJours(isoDate(isoA), -1)));
+      if (!veille){ toast("La veille n'est pas encore saisie.", true); return; }
+      setJour(isoA, { t:veille.t||"travail", m1:veille.m1||"", m2:veille.m2||"",
+                      a1:veille.a1||"", a2:veille.a2||"", p:veille.p||0 });
+    }
+    rendreTout();
+    return;
+  }
+
+  cible = ev.target.closest("[data-remplir]");
+  if (cible){
+    remplirSemaine(cible.getAttribute("data-remplir"));
+    return;
+  }
+
+  cible = ev.target.closest("[data-jour]");
+  if (cible){
+    var iso = cible.getAttribute("data-jour");
+    jourOuvert = (jourOuvert === iso) ? null : iso;
+    rendreSemaines();
+    if (jourOuvert){
+      var ouvert = $("listeSemaines").querySelector('[data-jour="' + jourOuvert + '"]');
+      if (ouvert && ouvert.getBoundingClientRect().bottom > window.innerHeight - 260){
+        ouvert.scrollIntoView({ block:"center" });
+      }
+    }
+  }
+});
+
+$("listeSemaines").addEventListener("change", function(ev){
+  var champ = ev.target.getAttribute("data-champ");
+  if (!champ) return;
+  var iso = ev.target.closest("[data-editeur]").getAttribute("data-editeur");
+  var j = journeeModifiable(iso);
+  if (champ === "p") j.p = Math.max(0, Math.min(600, parseInt(ev.target.value, 10) || 0));
+  else j[champ] = ev.target.value;
+  j.t = "travail";
+  setJour(iso, j);
+  rendreTout();
+});
+
+function remplirSemaine(isoLundi){
+  var hab = D.reglages.hab, poses = 0, deja = 0;
+  for (var i=0;i<7;i++){
+    var iso = dateIso(plusJours(isoDate(isoLundi), i));
+    if (getJour(iso)){ deja++; continue; }
+    if (i >= 5) D.jours[iso] = { t:"repos" };
+    else D.jours[iso] = { t:"travail", m1:hab.m1, m2:hab.m2, a1:hab.a1, a2:hab.a2, p:hab.p||0 };
+    poses++;
+  }
+  sauver();
+  rendreTout();
+  toast(poses
+    ? (poses + (poses>1 ? " journées remplies \uD83D\uDCAA" : " journée remplie \uD83D\uDCAA")
+       + (deja ? " (les " + deja + " déjà saisies n'ont pas bougé)" : ""))
+    : "Toutes les journées de cette semaine étaient déjà saisies.");
+}
+
+/* =========================================================================
+   Fabrication du PDF, sans aucune bibliothèque extérieure : l'app reste un
+   seul fichier et fonctionne hors connexion. On écrit directement le format
+   PDF (police Helvetica, encodage WinAnsi qui contient tous les accents
+   français).
+   ========================================================================= */
+
+var PDF = (function(){
+
+  var LARGEUR = 595.28, HAUTEUR = 841.89;   // A4 portrait, en points
+
+  // Caractères hors Latin-1 présents dans WinAnsi (tirets longs, guillemets...).
+  var SPECIAUX = {8364:128, 8218:130, 402:131, 8222:132, 8230:133, 8224:134, 8225:135,
+    710:136, 8240:137, 352:138, 8249:139, 338:140, 381:142, 8216:145, 8217:146,
+    8220:147, 8221:148, 8226:149, 8211:150, 8212:151, 732:152, 8482:153, 353:154,
+    8250:155, 339:156, 382:158, 376:159};
+
+  function octets(texte){
+    var out = [];
+    for (var i=0;i<texte.length;i++){
+      var c = texte.charCodeAt(i);
+      if (c < 256) out.push(c);
+      else if (SPECIAUX[c] != null) out.push(SPECIAUX[c]);
+      else out.push(63);                   // « ? » plutôt qu'un fichier cassé
+    }
+    return out;
+  }
+
+  // Largeurs officielles d'Helvetica (codes 32 à 126), pour aligner à droite.
+  var LARG_NORM = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,
+    556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,
+    1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,
+    667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,
+    333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,
+    556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+  var LARG_GRAS = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,
+    556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,
+    975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,
+    667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,
+    333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,
+    611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+  // Les lettres accentuées ont la largeur de leur lettre de base.
+  var BASES = {224:97,225:97,226:97,227:97,228:97,229:97,231:99,232:101,233:101,234:101,
+    235:101,236:105,237:105,238:105,239:105,241:110,242:111,243:111,244:111,245:111,
+    246:111,249:117,250:117,251:117,252:117,253:121,255:121,192:65,193:65,194:65,195:65,
+    196:65,197:65,199:67,200:69,201:69,202:69,203:69,204:73,205:73,206:73,207:73,209:78,
+    210:79,211:79,212:79,213:79,214:79,217:85,218:85,219:85,220:85,221:89};
+  var EXTRA = {8211:556, 8212:1000, 183:278, 171:556, 187:556, 176:400, 8217:222, 233:556};
+
+  function largeurTexte(texte, taille, gras){
+    var table = gras ? LARG_GRAS : LARG_NORM, total = 0;
+    for (var i=0;i<texte.length;i++){
+      var c = texte.charCodeAt(i);
+      if (BASES[c]) c = BASES[c];
+      if (c >= 32 && c <= 126) total += table[c-32];
+      else if (EXTRA[c]) total += EXTRA[c];
+      else total += 556;
+    }
+    return total * taille / 1000;
+  }
+
+  function echapperPdf(s){
+    return String(s).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  }
+  function nb(x){ return (Math.round(x*100)/100).toString(); }
+
+  function Doc(){ this.pages = []; this.ops = null; }
+
+  Doc.prototype.nouvellePage = function(){ this.ops = []; this.pages.push(this.ops); };
+
+  // y est compté depuis le HAUT de la page : plus lisible quand on met en page.
+  Doc.prototype.texte = function(x, y, texte, opt){
+    opt = opt || {};
+    var taille = opt.taille || 9, gras = !!opt.gras;
+    var s = String(texte == null ? "" : texte);
+    if (!s) return;
+    if (opt.droite) x = x - largeurTexte(s, taille, gras);
+    else if (opt.centre) x = x - largeurTexte(s, taille, gras) / 2;
+    var c = opt.couleur || [0.12, 0.16, 0.18];
+    this.ops.push(nb(c[0]) + " " + nb(c[1]) + " " + nb(c[2]) + " rg");
+    this.ops.push("BT /" + (gras ? "F2" : "F1") + " " + nb(taille) + " Tf 1 0 0 1 "
+                  + nb(x) + " " + nb(HAUTEUR - y) + " Tm (" + echapperPdf(s) + ") Tj ET");
+  };
+
+  Doc.prototype.trait = function(x1, y1, x2, y2, epaisseur, couleur){
+    var c = couleur || [0.85, 0.85, 0.91];
+    this.ops.push(nb(c[0]) + " " + nb(c[1]) + " " + nb(c[2]) + " RG " + nb(epaisseur || 0.6) + " w "
+                  + nb(x1) + " " + nb(HAUTEUR - y1) + " m " + nb(x2) + " " + nb(HAUTEUR - y2) + " l S");
+  };
+
+  Doc.prototype.pave = function(x, y, largeur, hauteur, couleur){
+    var c = couleur || [0.91, 0.94, 0.94];
+    this.ops.push(nb(c[0]) + " " + nb(c[1]) + " " + nb(c[2]) + " rg "
+                  + nb(x) + " " + nb(HAUTEUR - y - hauteur) + " " + nb(largeur) + " " + nb(hauteur) + " re f");
+  };
+
+  Doc.prototype.largeurTexte = largeurTexte;
+
+  function horodatage(){
+    var d = new Date();
+    var dec = -d.getTimezoneOffset(), signe = dec < 0 ? "-" : "+";
+    dec = Math.abs(dec);
+    return "D:" + d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate())
+         + pad2(d.getHours()) + pad2(d.getMinutes()) + pad2(d.getSeconds())
+         + signe + pad2(Math.floor(dec/60)) + "'" + pad2(dec%60) + "'";
+  }
+
+  // Assemble les objets PDF, la table des positions (xref) et le pied de fichier.
+  Doc.prototype.versBlob = function(titre){
+    var objets = [];
+    var nbPages = this.pages.length;
+    var kids = [];
+    for (var i=0;i<nbPages;i++) kids.push((6 + 2*i) + " 0 R");
+
+    objets[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objets[1] = "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + nbPages + " >>";
+    objets[2] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    objets[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    objets[4] = "<< /Title (" + echapperPdf(titre) + ") /Producer (Mes heures) /Creator (Mes heures) "
+              + "/CreationDate (" + horodatage() + ") >>";
+
+    for (var p=0;p<nbPages;p++){
+      var flux = this.pages[p].join("\n");
+      objets[5 + 2*p] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + nb(LARGEUR) + " " + nb(HAUTEUR) + "] "
+        + "/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (7 + 2*p) + " 0 R >>";
+      objets[6 + 2*p] = "<< /Length " + octets(flux).length + " >>\nstream\n" + flux + "\nendstream";
+    }
+
+    var morceaux = [], taille = 0;
+    function ecrire(s){ var o = octets(s); morceaux.push(o); taille += o.length; }
+
+    ecrire("%PDF-1.4\n%âãÏÓ\n");
+    var offsets = [];
+    for (var k=0;k<objets.length;k++){
+      offsets.push(taille);
+      ecrire((k+1) + " 0 obj\n" + objets[k] + "\nendobj\n");
+    }
+    var posXref = taille;
+    var x = "xref\n0 " + (objets.length+1) + "\n0000000000 65535 f \n";
+    for (var n=0;n<offsets.length;n++) x += ("0000000000" + offsets[n]).slice(-10) + " 00000 n \n";
+    x += "trailer\n<< /Size " + (objets.length+1) + " /Root 1 0 R /Info 5 0 R >>\n";
+    x += "startxref\n" + posXref + "\n%%EOF\n";
+    ecrire(x);
+
+    var tout = new Uint8Array(taille), pos = 0;
+    for (var b=0;b<morceaux.length;b++){
+      var bloc = morceaux[b];
+      for (var c=0;c<bloc.length;c++) tout[pos++] = bloc[c];
+    }
+    return new Blob([tout], { type:"application/pdf" });
+  };
+
+  return { Doc: Doc, LARGEUR: LARGEUR, HAUTEUR: HAUTEUR, largeurTexte: largeurTexte };
+})();
+
+/* ------------------------------------------- Mise en page du relevé mensuel */
+
+function construirePdfMois(annee, mois){
+  var ACCENT = [0.27, 0.20, 0.72], GRIS = [0.42, 0.44, 0.52], NOIR = [0.10, 0.10, 0.20];
+  var ROUGE = [0.62, 0.25, 0.20];
+  var G = 42, Dr = PDF.LARGEUR - 42;
+  var COL = { jour:G, matin:140, aprem:250, pause:372, total:Dr };
+
+  var doc = new PDF.Doc();
+  var b = bilanMois(annee, mois);
+  var sems = semainesDuMois(annee, mois);
+  var titreMois = MOIS_LONGS[mois] + " " + annee;
+  var y = 0, page = 0, marqueAnomalie = false;
+
+  function enteteTableau(){
+    doc.texte(COL.jour, y, "JOUR", { taille:7.5, gras:true, couleur:GRIS });
+    doc.texte(COL.matin, y, "MATIN", { taille:7.5, gras:true, couleur:GRIS });
+    doc.texte(COL.aprem, y, "APRÈS-MIDI", { taille:7.5, gras:true, couleur:GRIS });
+    doc.texte(COL.pause, y, "PAUSE", { taille:7.5, gras:true, couleur:GRIS });
+    doc.texte(COL.total, y, "TOTAL", { taille:7.5, gras:true, couleur:GRIS, droite:true });
+    y += 5;
+    doc.trait(G, y, Dr, y, 0.8, [0.70, 0.70, 0.82]);
+    y += 12;
+  }
+
+  function nouvellePage(){
+    doc.nouvellePage();
+    page++;
+    if (page === 1){
+      doc.texte(G, 56, "Relevé d'heures de travail", { taille:16, gras:true, couleur:ACCENT });
+      doc.texte(Dr, 56, titreMois, { taille:13, gras:true, droite:true, couleur:NOIR });
+      y = 72;
+      if (D.reglages.nom){ doc.texte(G, y, D.reglages.nom, { taille:10.5, gras:true }); y += 13; }
+      if (D.reglages.sousTitre){ doc.texte(G, y, D.reglages.sousTitre, { taille:9.5, couleur:GRIS }); y += 13; }
+      y += 2;
+      doc.trait(G, y, Dr, y, 0.8, [0.70, 0.70, 0.82]);
+      y += 17;
+
+      doc.texte(G, y, "Total du mois : " + texteDuree(b.minutes)
+                + "  (" + texteDecimal(b.minutes) + ")", { taille:12, gras:true, couleur:ACCENT });
+      y += 15;
+      var morceaux = [b.joursTravailles + (b.joursTravailles > 1 ? " jours travaillés" : " jour travaillé")];
+      if (b.pauses) morceaux.push(texteDuree(b.pauses) + " de pauses déduites");
+      if (b.repos) morceaux.push(b.repos + (b.repos > 1 ? " jours de repos" : " jour de repos"));
+      if (b.conge) morceaux.push(b.conge + (b.conge > 1 ? " jours de congé" : " jour de congé"));
+      if (b.ferie) morceaux.push(b.ferie + (b.ferie > 1 ? " jours fériés" : " jour férié"));
+      doc.texte(G, y, morceaux.join("  ·  "), { taille:9.5, couleur:GRIS });
+      y += 20;
+    } else {
+      doc.texte(G, 52, "Relevé d'heures — " + titreMois + " (suite)", { taille:10, gras:true, couleur:ACCENT });
+      y = 74;
+    }
+    enteteTableau();
+  }
+
+  function placePour(hauteur){
+    if (y + hauteur > PDF.HAUTEUR - 70) nouvellePage();
+  }
+
+  nouvellePage();
+
+  for (var s=0;s<sems.length;s++){
+    var sem = sems[s];
+    var jourskDansMois = [];
+    for (var k=0;k<7;k++) if (sem.jours[k].dansMois) jourskDansMois.push(sem.jours[k]);
+    if (!jourskDansMois.length) continue;
+
+    placePour(19 + 13.5 * jourskDansMois.length);
+
+    // Bandeau de semaine
+    doc.pave(G, y - 9, Dr - G, 15, [0.93, 0.93, 0.98]);
+    var etiquette = "Semaine " + sem.numero + "  ·  "
+      + plageTexte(jourskDansMois[0].date, jourskDansMois[jourskDansMois.length-1].date);
+    if (jourskDansMois.length < 7) etiquette += " (jours de ce mois)";
+    doc.texte(G + 5, y + 1, etiquette, { taille:9, gras:true });
+    doc.texte(Dr - 5, y + 1, texteDuree(minutesSemaine(sem, true)), { taille:9, gras:true, droite:true, couleur:ACCENT });
+    y += 19;
+
+    for (var d=0;d<jourskDansMois.length;d++){
+      placePour(13.5);
+      var jr = jourskDansMois[d];
+      var j = getJour(jr.iso);
+      var t = j ? (j.t || "travail") : null;
+      var anomalie = j ? anomalieJour(j) : "";
+
+      doc.texte(COL.jour, y, JOURS_COURTS[jr.jsJour] + " " + pad2(jr.date.getDate()),
+                { taille:9, gras:true, couleur: jr.jsJour >= 5 ? GRIS : NOIR });
+
+      if (!j){
+        doc.texte(COL.matin, y, "non saisi", { taille:9, couleur:GRIS });
+      } else if (t !== "travail"){
+        doc.texte(COL.matin, y, libelleType(t), { taille:9, couleur:GRIS });
+        doc.texte(COL.total, y, "0 h", { taille:9, droite:true, couleur:GRIS });
+      } else {
+        if (j.m1 && j.m2) doc.texte(COL.matin, y, j.m1 + " – " + j.m2, { taille:9 });
+        if (j.a1 && j.a2) doc.texte(COL.aprem, y, j.a1 + " – " + j.a2, { taille:9 });
+        if (j.p > 0) doc.texte(COL.pause, y, j.p + " min", { taille:9, couleur:GRIS });
+        doc.texte(COL.total, y, texteDuree(minutesJour(j)) + (anomalie ? " *" : ""),
+                  { taille:9, gras:true, droite:true, couleur: anomalie ? ROUGE : NOIR });
+        if (anomalie) marqueAnomalie = true;
+      }
+      y += 4;
+      doc.trait(G, y, Dr, y, 0.4);
+      y += 9.5;
+    }
+    y += 4;
+  }
+
+  // Total final
+  placePour(34);
+  y += 4;
+  doc.pave(G, y - 11, Dr - G, 24, [0.27, 0.20, 0.72]);
+  doc.texte(G + 8, y + 5, "TOTAL " + titreMois.toUpperCase(), { taille:10.5, gras:true, couleur:[1,1,1] });
+  doc.texte(Dr - 8, y + 5, texteDuree(b.minutes) + "   (" + texteDecimal(b.minutes) + ")",
+            { taille:10.5, gras:true, droite:true, couleur:[1,1,1] });
+  y += 30;
+  if (marqueAnomalie){
+    doc.texte(G, y, "* journée incomplète ou incohérente, à vérifier.", { taille:8, couleur:ROUGE });
+  }
+
+  // Pieds de page : on les ajoute une fois le nombre de pages connu.
+  var total = doc.pages.length;
+  var jourEdition = pad2(aujourdhui.getDate()) + "/" + pad2(aujourdhui.getMonth()+1) + "/" + aujourdhui.getFullYear();
+  for (var p=0;p<total;p++){
+    doc.ops = doc.pages[p];
+    doc.trait(G, PDF.HAUTEUR - 52, Dr, PDF.HAUTEUR - 52, 0.4);
+    doc.texte(G, PDF.HAUTEUR - 40, "Établi le " + jourEdition, { taille:8, couleur:GRIS });
+    doc.texte(Dr, PDF.HAUTEUR - 40, "Page " + (p+1) + " / " + total, { taille:8, couleur:GRIS, droite:true });
+  }
+
+  return {
+    blob: doc.versBlob("Relevé d'heures " + titreMois),
+    nom: "heures-" + MOIS_LONGS[mois].replace("û","u").replace("é","e") + "-" + annee + ".pdf"
+  };
+}
+
+function telecharger(blob, nom){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = nom;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+}
+
+/* ------------------------------------------------- Messages et questions */
+
+var minuteurToast = null;
+function toast(message, erreur){
+  var t = $("toast");
+  t.textContent = message;
+  t.className = "toast" + (erreur ? " err" : "");
+  t.hidden = false;
+  clearTimeout(minuteurToast);
+  minuteurToast = setTimeout(function(){ t.hidden = true; }, erreur ? 5200 : 3400);
+}
+
+// Fenêtre de confirmation maison : plus lisible qu'un confirm() du navigateur,
+// et elle fonctionne partout (y compris quand la page est intégrée ailleurs).
+function confirmer(message, libelleOui, action){
+  var fond = document.createElement("div");
+  fond.className = "modal-fond";
+  fond.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><p></p>'
+    + '<div class="modal-actions"><button type="button" class="btn-line" data-non>Annuler</button>'
+    + '<button type="button" class="btn-primary" data-oui></button></div></div>';
+  fond.querySelector("p").textContent = message;
+  fond.querySelector("[data-oui]").textContent = libelleOui;
+  function fermer(){ if (fond.parentNode) fond.parentNode.removeChild(fond); }
+  fond.addEventListener("click", function(ev){
+    if (ev.target === fond || ev.target.hasAttribute("data-non")) fermer();
+    else if (ev.target.hasAttribute("data-oui")){ fermer(); action(); }
+  });
+  document.body.appendChild(fond);
+}
+
+/* --------------------------------------------- Sauvegarde et son rappel */
+
+// Empreinte du contenu : le rappel ne s'affiche que si les heures ont changé
+// depuis la dernière sauvegarde réussie.
+function empreinte(){
+  var texte = JSON.stringify(D.jours), h = 5381;
+  for (var i=0;i<texte.length;i++) h = ((h*33) ^ texte.charCodeAt(i)) >>> 0;
+  return h.toString(36) + "-" + texte.length;
+}
+
+function lireInfoSauvegarde(){
+  try {
+    var f = JSON.parse(localStorage.getItem(CLE_SAUVEGARDE) || "{}");
+    return {
+      date: typeof f.date === "string" ? f.date : null,
+      empreinte: typeof f.empreinte === "string" ? f.empreinte : null,
+      frequence: (f.frequence === 0 || f.frequence) ? (parseInt(f.frequence,10) || 0) : 7,
+      reporteAu: typeof f.reporteAu === "string" ? f.reporteAu : null
+    };
+  } catch(e){ return { date:null, empreinte:null, frequence:7, reporteAu:null }; }
+}
+function ecrireInfoSauvegarde(f){
+  try { localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify(f)); } catch(e){}
+}
+function marquerSauvegarde(){
+  var f = lireInfoSauvegarde();
+  f.date = new Date().toISOString();
+  f.empreinte = empreinte();
+  f.reporteAu = null;
+  ecrireInfoSauvegarde(f);
+  rendreRappel();
+}
+
+function joursEcoules(iso){
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
+function rendreRappel(){
+  var f = lireInfoSauvegarde();
+  var nbJours = 0;
+  for (var cle in D.jours) if (Object.prototype.hasOwnProperty.call(D.jours, cle)) nbJours++;
+  var aJour = (f.empreinte === empreinte());
+
+  $("rappelFrequence").value = String(f.frequence);
+
+  var ligne = $("derniereSauvegarde");
+  if (!f.date){
+    ligne.innerHTML = "Dernière sauvegarde : <strong>jamais</strong>";
+    ligne.className = "derniere-sauvegarde" + (nbJours ? " alerte" : "");
+  } else {
+    var n = joursEcoules(f.date);
+    var quand = n <= 0 ? "aujourd'hui" : (n === 1 ? "hier" : "il y a " + n + " jours");
+    ligne.innerHTML = "Dernière sauvegarde : <strong>" + quand + "</strong>"
+                    + (aJour ? " (à jour)" : " &#183; des heures ont changé depuis");
+    ligne.className = "derniere-sauvegarde" + (aJour ? "" : " alerte");
+  }
+
+  var reporte = f.reporteAu && new Date(f.reporteAu).getTime() > Date.now();
+  var due = !f.date || joursEcoules(f.date) >= f.frequence;
+  var afficher = f.frequence > 0 && nbJours > 0 && !aJour && due && !reporte;
+
+  var bandeau = $("rappelSauvegarde");
+  bandeau.hidden = !afficher;
+  if (!afficher) return;
+
+  if (!f.date){
+    $("rappelTitre").textContent = "Pense à sauvegarder tes heures";
+    $("rappelDetail").textContent = "Tes heures ne sont enregistrées que sur cet appareil. "
+      + "Un fichier de sauvegarde te protège si tu changes de téléphone.";
+  } else {
+    $("rappelTitre").textContent = "Sauvegarde à refaire";
+    $("rappelDetail").textContent = "Dernière sauvegarde il y a " + joursEcoules(f.date)
+      + " jours, et tes heures ont changé depuis.";
+  }
+}
+
+function sauvegarder(){
+  var contenu = JSON.stringify({
+    app: "mes-heures", version: 1,
+    exporte: new Date().toISOString(),
+    jours: D.jours, reglages: D.reglages
+  }, null, 1);
+  telecharger(new Blob([contenu], { type:"application/json" }),
+              "sauvegarde-heures-" + dateIso(new Date()) + ".json");
+  marquerSauvegarde();
+  toast("Sauvegarde téléchargée. Range-la dans un endroit sûr.");
+}
+
+function restaurer(fichier){
+  var lecteur = new FileReader();
+  lecteur.onload = function(){
+    var o;
+    try { o = JSON.parse(String(lecteur.result)); }
+    catch(e){ toast("Ce fichier n'est pas lisible.", true); return; }
+    if (!o || typeof o !== "object" || !o.jours || typeof o.jours !== "object"){
+      toast("Ce fichier n'est pas une sauvegarde de cette app.", true);
+      return;
+    }
+    var n = 0;
+    for (var cle in o.jours) if (Object.prototype.hasOwnProperty.call(o.jours, cle)) n++;
+    confirmer("Cette sauvegarde contient " + n + (n > 1 ? " journées" : " journée")
+      + ". Elle va remplacer toutes les heures actuellement dans l'app.",
+      "Remplacer", function(){
+        D.jours = o.jours;
+        if (o.reglages && typeof o.reglages === "object"){
+          var r = reglagesParDefaut();
+          if (o.reglages.hab) r.hab = {
+            m1:o.reglages.hab.m1 || "", m2:o.reglages.hab.m2 || "",
+            a1:o.reglages.hab.a1 || "", a2:o.reglages.hab.a2 || "",
+            p: Math.max(0, parseInt(o.reglages.hab.p,10) || 0)
+          };
+          if (typeof o.reglages.nom === "string") r.nom = o.reglages.nom;
+          if (typeof o.reglages.sousTitre === "string") r.sousTitre = o.reglages.sousTitre;
+          if (typeof o.reglages.theme === "string") r.theme = o.reglages.theme;
+          r.plage = Math.max(0, Math.min(23, parseInt(o.reglages.plage,10) || 0));
+          if (o.reglages.objectif != null) r.objectif = bornerObjectif(o.reglages.objectif);
+          D.reglages = r;
+        }
+        sauver();
+        marquerSauvegarde();
+        appliquerTheme();
+        remplirReglages();
+        jourOuvert = null;
+        rendreTout();
+        toast("Sauvegarde restaurée : " + n + (n > 1 ? " journées retrouvées." : " journée retrouvée."));
+      });
+  };
+  lecteur.onerror = function(){ toast("Impossible de lire ce fichier.", true); };
+  lecteur.readAsText(fichier);
+}
+
+/* ------------------------------------------------------------- Réglages */
+
+function appliquerTheme(){
+  var t = D.reglages.theme;
+  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  else document.documentElement.removeAttribute("data-theme");
+}
+
+function remplirReglages(){
+  var hab = D.reglages.hab;
+  ["habM1","habM2","habA1","habA2"].forEach(function(id){
+    var champ = { habM1:"m1", habM2:"m2", habA1:"a1", habA2:"a2" }[id];
+    $(id).innerHTML = optionsHeures();
+    $(id).value = hab[champ] || "";
+  });
+  $("habPause").value = hab.p || 0;
+  var minutes = minutesJour({ t:"travail", m1:hab.m1, m2:hab.m2, a1:hab.a1, a2:hab.a2, p:hab.p });
+  var souci = anomalieJour({ t:"travail", m1:hab.m1, m2:hab.m2, a1:hab.a1, a2:hab.a2, p:hab.p });
+  $("habTotal").textContent = souci ? souci : ("Une journée habituelle fait " + texteDuree(minutes) + ".");
+  var choixObjectif = [0,300,480,600,720,900,1050,1200,1440,1500,1800,2100,2340,2400];
+  var opts = "";
+  for (var o=0;o<choixObjectif.length;o++){
+    opts += '<option value="' + choixObjectif[o] + '">'
+          + (choixObjectif[o] ? texteDuree(choixObjectif[o]) + " par semaine" : "Pas d'objectif")
+          + '</option>';
+  }
+  // Un objectif restauré depuis une sauvegarde peut ne pas être dans la liste.
+  if (D.reglages.objectif && choixObjectif.indexOf(D.reglages.objectif) < 0){
+    opts += '<option value="' + D.reglages.objectif + '">' + texteDuree(D.reglages.objectif) + ' par semaine</option>';
+  }
+  $("objectifSemaine").innerHTML = opts;
+  $("objectifSemaine").value = String(D.reglages.objectif || 0);
+
+  $("nomPdf").value = D.reglages.nom;
+  $("sousTitrePdf").value = D.reglages.sousTitre;
+  $("choixTheme").value = D.reglages.theme;
+  $("choixPlage").value = String(D.reglages.plage);
+  $("numVersion").textContent = VERSION_APP;
+}
+
+function surHabituels(){
+  var hab = D.reglages.hab;
+  hab.m1 = $("habM1").value; hab.m2 = $("habM2").value;
+  hab.a1 = $("habA1").value; hab.a2 = $("habA2").value;
+  hab.p = Math.max(0, Math.min(600, parseInt($("habPause").value, 10) || 0));
+  sauver();
+  remplirReglages();
+}
+
+["habM1","habM2","habA1","habA2","habPause"].forEach(function(id){
+  $(id).addEventListener("change", surHabituels);
+});
+
+$("nomPdf").addEventListener("input", function(){ D.reglages.nom = this.value.slice(0,60); sauver(); });
+$("sousTitrePdf").addEventListener("input", function(){ D.reglages.sousTitre = this.value.slice(0,60); sauver(); });
+
+$("objectifSemaine").addEventListener("change", function(){
+  D.reglages.objectif = bornerObjectif(this.value);
+  sauver();
+  rendreSemaines();
+  rendreMois();
+});
+
+$("choixTheme").addEventListener("change", function(){
+  D.reglages.theme = this.value; sauver(); appliquerTheme();
+});
+
+$("choixPlage").addEventListener("change", function(){
+  D.reglages.plage = parseInt(this.value, 10) || 0;
+  sauver();
+  cacheOptions = null;
+  remplirReglages();
+  rendreSemaines();
+});
+
+$("themeBtn").addEventListener("click", function(){
+  var suite = { auto:"light", light:"dark", dark:"auto" };
+  D.reglages.theme = suite[D.reglages.theme] || "auto";
+  sauver();
+  appliquerTheme();
+  $("choixTheme").value = D.reglages.theme;
+  toast("Thème : " + { auto:"comme le téléphone", light:"clair", dark:"sombre" }[D.reglages.theme]);
+});
+
+$("rappelFrequence").addEventListener("change", function(){
+  var f = lireInfoSauvegarde();
+  f.frequence = parseInt(this.value, 10) || 0;
+  f.reporteAu = null;
+  ecrireInfoSauvegarde(f);
+  rendreRappel();
+});
+
+$("rappelPlusTard").addEventListener("click", function(){
+  var f = lireInfoSauvegarde();
+  f.reporteAu = new Date(Date.now() + 2*86400000).toISOString();   // on redemande dans 2 jours
+  ecrireInfoSauvegarde(f);
+  rendreRappel();
+  toast("D'accord, je te le redemande dans deux jours.");
+});
+$("rappelSauver").addEventListener("click", sauvegarder);
+$("btnSauvegarder").addEventListener("click", sauvegarder);
+$("btnRestaurer").addEventListener("click", function(){ $("fichierRestauration").click(); });
+$("fichierRestauration").addEventListener("change", function(){
+  if (this.files && this.files[0]) restaurer(this.files[0]);
+  this.value = "";
+});
+
+/* ------------------------------------------------------- PDF du mois */
+
+$("btnPdf").addEventListener("click", function(){
+  var b = bilanMois(moisCourant.a, moisCourant.m);
+  if (!b.saisis){
+    toast("Il n'y a rien à exporter pour " + MOIS_LONGS[moisCourant.m] + ".", true);
+    return;
+  }
+  try {
+    var res = construirePdfMois(moisCourant.a, moisCourant.m);
+    telecharger(res.blob, res.nom);
+    toast("PDF de " + MOIS_LONGS[moisCourant.m] + " " + moisCourant.a + " téléchargé.");
+  } catch(e){
+    toast("Le PDF n'a pas pu être créé.", true);
+  }
+});
+
+/* ------------------------------------------------- Navigation générale */
+
+var flechesMois = document.querySelectorAll(".mois-nav .fleche");
+for (var fi=0; fi<flechesMois.length; fi++){
+  flechesMois[fi].addEventListener("click", function(){
+    changerMois(parseInt(this.getAttribute("data-pas"), 10));
+  });
+}
+var boutonsAujourdhui = document.querySelectorAll("[data-aujourdhui]");
+for (var ai=0; ai<boutonsAujourdhui.length; ai++){
+  boutonsAujourdhui[ai].addEventListener("click", function(){
+    moisCourant = { a: aujourdhui.getFullYear(), m: aujourdhui.getMonth() };
+    jourOuvert = null;
+    rendreTout();
+    window.scrollTo(0, 0);
+  });
+}
+
+var onglets = document.querySelectorAll(".tabbar button");
+for (var oi=0; oi<onglets.length; oi++){
+  onglets[oi].addEventListener("click", function(){
+    var cible = this.getAttribute("data-vue");
+    for (var i=0;i<onglets.length;i++) onglets[i].classList.toggle("active", onglets[i] === this);
+    var vues = document.querySelectorAll(".view");
+    for (var k=0;k<vues.length;k++) vues[k].classList.toggle("active", vues[k].id === cible);
+    window.scrollTo(0, 0);
+  });
+}
+
+$("majRecharger").addEventListener("click", function(){ location.reload(); });
+
+/* ------------------------------------------------------------ Démarrage */
+
+appliquerTheme();
+remplirReglages();
+rendreTout();
+sauver();   // vérifie au passage que cet appareil accepte bien d'enregistrer
+
+/* Mises à jour de l'application.
+   L'app garde une copie d'elle-même pour fonctionner hors connexion. Quand une
+   nouvelle version est déposée, la copie déjà ouverte continue de tourner
+   jusqu'au prochain rechargement : on prévient donc explicitement, au lieu de
+   laisser croire qu'une nouveauté « ne marche pas ». */
+function surveillerMisesAJour(){
+  navigator.serviceWorker.register("sw.js").then(function(enregistrement){
+    enregistrement.addEventListener("updatefound", function(){
+      var nouveau = enregistrement.installing;
+      if (!nouveau) return;
+      nouveau.addEventListener("statechange", function(){
+        // Un contrôleur existant = ce n'est pas la première installation,
+        // donc il s'agit bien d'une mise à jour.
+        if (nouveau.state === "installed" && navigator.serviceWorker.controller){
+          $("bandeauMaj").hidden = false;
+        }
+      });
+    });
+    enregistrement.update().catch(function(){});   // vérifie à chaque ouverture
+  }).catch(function(){});
+}
+
+if ("serviceWorker" in navigator
+    && (location.protocol === "https:" || location.hostname === "localhost")){
+  window.addEventListener("load", surveillerMisesAJour);
+}
+
+})();
+</script>
+</body>
+</html>
