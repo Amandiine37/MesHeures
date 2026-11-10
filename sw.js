@@ -9,7 +9,7 @@
  * « Une nouvelle version est prete » dans l'application. Sans elle, le
  * navigateur ne voit aucune mise a jour et le bandeau n'apparait jamais.
  */
-var VERSION = "1.0";
+var VERSION = "1.1";
 var CACHE = "heures-v" + VERSION;
 var ASSETS = [
   "./",

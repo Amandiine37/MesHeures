@@ -26,6 +26,7 @@
     --repos-bg:rgba(14,165,233,.15);  --repos-ink:#0369A1;
     --conge-bg:rgba(16,185,129,.18);  --conge-ink:#047857;
     --ferie-bg:rgba(245,158,11,.22);  --ferie-ink:#A94E06;
+    --sup-bg:rgba(0,166,196,.16);     --sup-ink:#03657A;
     --alerte:#D22D2D;
     --radius:18px;
     --radius-sm:12px;
@@ -42,6 +43,7 @@
       --repos-bg:rgba(56,189,248,.18);  --repos-ink:#7DD3FC;
       --conge-bg:rgba(52,211,153,.18);  --conge-ink:#6EE7B7;
       --ferie-bg:rgba(251,191,36,.18);  --ferie-ink:#FCD34D;
+      --sup-bg:rgba(34,211,238,.18);    --sup-ink:#67E8F9;
       --alerte:#FB7185;
       --shadow:0 2px 4px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.45);
     }
@@ -53,6 +55,7 @@
     --repos-bg:rgba(56,189,248,.18);  --repos-ink:#7DD3FC;
     --conge-bg:rgba(52,211,153,.18);  --conge-ink:#6EE7B7;
     --ferie-bg:rgba(251,191,36,.18);  --ferie-ink:#FCD34D;
+    --sup-bg:rgba(34,211,238,.18);    --sup-ink:#67E8F9;
     --alerte:#FB7185;
     --shadow:0 2px 4px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.45);
   }
@@ -63,6 +66,7 @@
     --repos-bg:rgba(14,165,233,.15);  --repos-ink:#0369A1;
     --conge-bg:rgba(16,185,129,.18);  --conge-ink:#047857;
     --ferie-bg:rgba(245,158,11,.22);  --ferie-ink:#A94E06;
+    --sup-bg:rgba(0,166,196,.16);     --sup-ink:#03657A;
     --alerte:#D22D2D;
     --shadow:0 2px 4px rgba(22,21,46,.05), 0 10px 24px rgba(22,21,46,.07);
   }
@@ -230,6 +234,9 @@
   .puce.repos{background:var(--repos-bg);color:var(--repos-ink);}
   .puce.conge{background:var(--conge-bg);color:var(--conge-ink);}
   .puce.ferie{background:var(--ferie-bg);color:var(--ferie-ink);}
+  .puce.sup{background:var(--sup-bg);color:var(--sup-ink);}
+  .sem-sup{margin-top:.5rem;}
+  .stat-card.sup .val{color:var(--sup-ink);}
   .anomalie{color:var(--alerte);font-weight:700;}
   .sem-pied{
     display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
@@ -448,6 +455,11 @@
           <span class="val" id="recapTotal">0 h</span>
           <span class="sous" id="recapTotalDecimal"></span>
         </div>
+        <div class="stat-card large sup" id="carteSup">
+          <span class="lbl">Heures supplémentaires ⚡</span>
+          <span class="val" id="recapSup">0 h</span>
+          <span class="sous" id="recapSupDetail"></span>
+        </div>
         <div class="stat-card">
           <span class="lbl">Jours travaillés</span>
           <span class="val" id="recapJours">0</span>
@@ -512,6 +524,17 @@
         <label class="champ">
           <span class="lbl">Heures visées par semaine</span>
           <select id="objectifSemaine"></select>
+        </label>
+      </div>
+
+      <div class="carte">
+        <h2>Heures supplémentaires ⚡</h2>
+        <p class="aide">Tout ce qui dépasse ce nombre d'heures dans une semaine (du lundi au
+          dimanche) est compté en heures sup. Une semaine à cheval sur deux mois est rattachée
+          au mois où tombent la majorité de ses jours.</p>
+        <label class="champ">
+          <span class="lbl">Heures sup au-delà de</span>
+          <select id="seuilSup"></select>
         </label>
       </div>
 
@@ -613,7 +636,7 @@
    l'utilisatrice range où elle veut.
    ========================================================================= */
 
-var VERSION_APP = "1.0";
+var VERSION_APP = "1.1";
 var CLE_DONNEES = "heures_v1";
 var CLE_SAUVEGARDE = "heures_sauvegarde_v1";
 var PAS_MINUTES = 15;              // écart entre deux heures des listes déroulantes
@@ -691,6 +714,7 @@ function reglagesParDefaut(){
   return {
     hab: { m1:"09:00", m2:"12:30", a1:"13:30", a2:"17:00", p:0 },
     objectif: 2100,                       // 35 h par semaine
+    seuilSup: 2100,                       // heures sup au-delà de 35 h par semaine
     nom: "", sousTitre: "", theme: "auto", plage: 0
   };
 }
@@ -716,6 +740,7 @@ function charger(){
       if (typeof o.reglages.theme === "string") r.theme = o.reglages.theme;
       r.plage = Math.max(0, Math.min(23, parseInt(o.reglages.plage,10) || 0));
       if (o.reglages.objectif != null) r.objectif = bornerObjectif(o.reglages.objectif);
+      if (o.reglages.seuilSup != null) r.seuilSup = bornerObjectif(o.reglages.seuilSup);
     }
     return {
       jours: (o.jours && typeof o.jours === "object") ? o.jours : {},
@@ -825,6 +850,37 @@ function bilanMois(annee, mois){
   return b;
 }
 
+/* Heures supplementaires.
+   Elles se comptent sur la SEMAINE ENTIERE (lundi -> dimanche), meme quand une
+   partie de la semaine tombe dans le mois voisin : c'est la semaine qui fait
+   foi, pas le mois. Pour le total mensuel, une semaine a cheval est rattachee
+   au mois qui contient son jeudi, donc celui ou tombent au moins 4 de ses
+   7 jours (c'est la regle des numeros de semaine du calendrier). */
+function moisDeLaSemaine(sem){
+  var jeudi = sem.jours[3].date;
+  return { a: jeudi.getFullYear(), m: jeudi.getMonth() };
+}
+
+function semaineRattachee(sem, annee, mois){
+  var p = moisDeLaSemaine(sem);
+  return p.a === annee && p.m === mois;
+}
+
+function heuresSupSemaine(sem){
+  var seuil = D.reglages.seuilSup || 0;
+  if (seuil <= 0) return 0;
+  return Math.max(0, minutesSemaine(sem, false) - seuil);
+}
+
+function heuresSupMois(annee, mois){
+  if (!(D.reglages.seuilSup > 0)) return 0;
+  var sems = semainesDuMois(annee, mois), total = 0;
+  for (var i=0;i<sems.length;i++){
+    if (semaineRattachee(sems[i], annee, mois)) total += heuresSupSemaine(sems[i]);
+  }
+  return total;
+}
+
 function minutesSemaine(sem, filtreMois){
   var total = 0;
   for (var i=0;i<7;i++){
@@ -865,6 +921,12 @@ function selectHeures(champ, valeur){
   return '<select data-champ="' + champ + '">'
        + optionsHeures().replace(cible, cible + " selected")
        + '</select>';
+}
+
+// « de janvier », mais « d'avril » : petite élision.
+function deMois(m){
+  var nom = MOIS_LONGS[m];
+  return ("aeiouâéèêîôû".indexOf(nom.charAt(0)) >= 0 ? "d'" : "de ") + nom;
 }
 
 function plageTexte(a, b){
@@ -972,9 +1034,20 @@ function carteSemaine(sem){
        + '<div class="jauge-txt' + (atteint ? " atteint" : "") + '">'
        + (atteint
             ? "Objectif atteint \uD83D\uDD25"
-              + (totalSemaine > objectif ? " (+" + texteDuree(totalSemaine - objectif) + ")" : "")
+              // Quand le seuil des heures sup est le même nombre, la pastille
+              // « X h sup » dit déjà le dépassement : inutile de le répéter.
+              + (totalSemaine > objectif && D.reglages.seuilSup !== objectif
+                   ? " (+" + texteDuree(totalSemaine - objectif) + ")" : "")
             : "Objectif " + texteDuree(objectif) + " \u00B7 encore " + texteDuree(objectif - totalSemaine))
        + '</div>';
+  }
+
+  var sup = heuresSupSemaine(sem);
+  if (sup > 0){
+    var proprio = moisDeLaSemaine(sem);
+    var ailleurs = !(proprio.a === moisCourant.a && proprio.m === moisCourant.m);
+    h += '<div class="sem-sup"><span class="puce sup">\u26A1 ' + texteDuree(sup) + ' sup'
+       + (ailleurs ? ' (compt\u00e9es en ' + MOIS_LONGS[proprio.m] + ')' : '') + '</span></div>';
   }
 
   h += '</div><div class="jours">';
@@ -986,9 +1059,12 @@ function carteSemaine(sem){
 
   var note = "Total de la semaine entière, du lundi au dimanche.";
   if (horsMois > 0){
-    note = "Semaine à cheval : les jours de " + MOIS_LONGS[moisVoisin]
-         + " sont grisés et ne comptent pas dans le total de " + MOIS_LONGS[moisCourant.m]
+    note = "Semaine à cheval : les jours " + deMois(moisVoisin)
+         + " sont grisés et ne comptent pas dans le total " + deMois(moisCourant.m)
          + (minutesHors > 0 ? " (" + texteDuree(minutesHors) + " y sont saisies)" : "") + ".";
+    if (sup > 0){
+      note += " Ses heures sup sont compt\u00e9es en " + MOIS_LONGS[moisDeLaSemaine(sem).m] + ".";
+    }
   }
 
   h += '</div><div class="sem-pied"><span class="note">' + note + '</span>'
@@ -1022,6 +1098,15 @@ function rendreMois(){
     : "";
   $("recapPauses").textContent = texteDuree(b.pauses);
 
+  var seuilSup = D.reglages.seuilSup || 0;
+  $("carteSup").hidden = seuilSup <= 0;
+  if (seuilSup > 0){
+    var supMois = heuresSupMois(moisCourant.a, moisCourant.m);
+    $("recapSup").textContent = texteDuree(supMois);
+    $("recapSupDetail").textContent = (supMois > 0 ? "au-del\u00e0 de " : "aucune heure au-del\u00e0 de ")
+      + texteDuree(seuilSup) + " par semaine";
+  }
+
   var abs = "";
   if (b.repos) abs += '<span class="puce repos">' + b.repos + (b.repos>1 ? " jours" : " jour") + ' de repos</span>';
   if (b.conge) abs += '<span class="puce conge">' + b.conge + (b.conge>1 ? " jours" : " jour") + ' de congé</span>';
@@ -1036,11 +1121,19 @@ function rendreMois(){
     for (var k=0;k<7;k++) if (sem.jours[k].dansMois) dans.push(sem.jours[k].date);
     var acheval = dans.length < 7;
     var objectifAtteint = !acheval && D.reglages.objectif > 0 && mDansMois >= D.reglages.objectif;
+    var supSem = heuresSupSemaine(sem);
+    var pourCeMois = semaineRattachee(sem, moisCourant.a, moisCourant.m);
     lignes += '<tr><td>Semaine ' + sem.numero
             + '<span class="sous">' + plageTexte(dans[0], dans[dans.length-1])
             + (acheval ? " (jours de ce mois seulement)" : "") + '</span></td>'
             + '<td>' + texteDuree(mDansMois)
-            + (objectifAtteint ? ' <span class="etoile">\uD83D\uDD25</span>' : "") + '</td></tr>';
+            + (objectifAtteint ? ' <span class="etoile">\uD83D\uDD25</span>' : "")
+            + (supSem > 0
+                 ? '<span class="sous">' + texteDuree(supSem) + ' sup'
+                   + (pourCeMois ? (acheval ? ' (semaine enti\u00e8re)' : '')
+                                 : ' en ' + MOIS_COURTS[moisDeLaSemaine(sem).m]) + '</span>'
+                 : "")
+            + '</td></tr>';
   }
   $("recapSemaines").innerHTML = lignes;
 }
@@ -1335,6 +1428,8 @@ function construirePdfMois(annee, mois){
 
   var doc = new PDF.Doc();
   var b = bilanMois(annee, mois);
+  var seuilSup = D.reglages.seuilSup || 0;
+  var supMois = heuresSupMois(annee, mois);
   var sems = semainesDuMois(annee, mois);
   var titreMois = MOIS_LONGS[mois] + " " + annee;
   var y = 0, page = 0, marqueAnomalie = false;
@@ -1371,6 +1466,7 @@ function construirePdfMois(annee, mois){
       if (b.repos) morceaux.push(b.repos + (b.repos > 1 ? " jours de repos" : " jour de repos"));
       if (b.conge) morceaux.push(b.conge + (b.conge > 1 ? " jours de congé" : " jour de congé"));
       if (b.ferie) morceaux.push(b.ferie + (b.ferie > 1 ? " jours fériés" : " jour férié"));
+      if (supMois > 0) morceaux.push(texteDuree(supMois) + " supplémentaires");
       doc.texte(G, y, morceaux.join("  ·  "), { taille:9.5, couleur:GRIS });
       y += 20;
     } else {
@@ -1399,6 +1495,14 @@ function construirePdfMois(annee, mois){
     var etiquette = "Semaine " + sem.numero + "  ·  "
       + plageTexte(jourskDansMois[0].date, jourskDansMois[jourskDansMois.length-1].date);
     if (jourskDansMois.length < 7) etiquette += " (jours de ce mois)";
+    var supSem = heuresSupSemaine(sem);
+    if (supSem > 0){
+      etiquette += !semaineRattachee(sem, annee, mois)
+        ? "  \u00B7  " + texteDuree(supSem) + " sup rattach\u00e9es \u00e0 " + MOIS_LONGS[moisDeLaSemaine(sem).m]
+        : (jourskDansMois.length < 7
+             ? "  \u00B7  " + texteDuree(supSem) + " sup sur la semaine enti\u00e8re"
+             : "  \u00B7  dont " + texteDuree(supSem) + " sup");
+    }
     doc.texte(G + 5, y + 1, etiquette, { taille:9, gras:true });
     doc.texte(Dr - 5, y + 1, texteDuree(minutesSemaine(sem, true)), { taille:9, gras:true, droite:true, couleur:ACCENT });
     y += 19;
@@ -1451,6 +1555,12 @@ function construirePdfMois(annee, mois){
   for (var p=0;p<total;p++){
     doc.ops = doc.pages[p];
     doc.trait(G, PDF.HAUTEUR - 52, Dr, PDF.HAUTEUR - 52, 0.4);
+    if (seuilSup > 0){
+      // Pose dans la marge basse : la pagination du tableau n'en est pas affectée.
+      doc.texte(G, PDF.HAUTEUR - 62, "Heures sup compt\u00e9es au-del\u00e0 de " + texteDuree(seuilSup)
+        + " par semaine (du lundi au dimanche). Une semaine \u00e0 cheval est rattach\u00e9e au mois o\u00f9 tombent la majorit\u00e9 de ses jours.",
+        { taille:7, couleur:GRIS });
+    }
     doc.texte(G, PDF.HAUTEUR - 40, "Établi le " + jourEdition, { taille:8, couleur:GRIS });
     doc.texte(Dr, PDF.HAUTEUR - 40, "Page " + (p+1) + " / " + total, { taille:8, couleur:GRIS, droite:true });
   }
@@ -1618,6 +1728,7 @@ function restaurer(fichier){
           if (typeof o.reglages.theme === "string") r.theme = o.reglages.theme;
           r.plage = Math.max(0, Math.min(23, parseInt(o.reglages.plage,10) || 0));
           if (o.reglages.objectif != null) r.objectif = bornerObjectif(o.reglages.objectif);
+          if (o.reglages.seuilSup != null) r.seuilSup = bornerObjectif(o.reglages.seuilSup);
           D.reglages = r;
         }
         sauver();
@@ -1666,6 +1777,18 @@ function remplirReglages(){
   $("objectifSemaine").innerHTML = opts;
   $("objectifSemaine").value = String(D.reglages.objectif || 0);
 
+  var optsSup = "";
+  for (var v=0;v<choixObjectif.length;v++){
+    optsSup += '<option value="' + choixObjectif[v] + '">'
+             + (choixObjectif[v] ? texteDuree(choixObjectif[v]) + " par semaine" : "Ne pas compter d'heures sup")
+             + '</option>';
+  }
+  if (D.reglages.seuilSup && choixObjectif.indexOf(D.reglages.seuilSup) < 0){
+    optsSup += '<option value="' + D.reglages.seuilSup + '">' + texteDuree(D.reglages.seuilSup) + ' par semaine</option>';
+  }
+  $("seuilSup").innerHTML = optsSup;
+  $("seuilSup").value = String(D.reglages.seuilSup || 0);
+
   $("nomPdf").value = D.reglages.nom;
   $("sousTitrePdf").value = D.reglages.sousTitre;
   $("choixTheme").value = D.reglages.theme;
@@ -1691,6 +1814,13 @@ $("sousTitrePdf").addEventListener("input", function(){ D.reglages.sousTitre = t
 
 $("objectifSemaine").addEventListener("change", function(){
   D.reglages.objectif = bornerObjectif(this.value);
+  sauver();
+  rendreSemaines();
+  rendreMois();
+});
+
+$("seuilSup").addEventListener("change", function(){
+  D.reglages.seuilSup = bornerObjectif(this.value);
   sauver();
   rendreSemaines();
   rendreMois();
@@ -1751,7 +1881,7 @@ $("btnPdf").addEventListener("click", function(){
   try {
     var res = construirePdfMois(moisCourant.a, moisCourant.m);
     telecharger(res.blob, res.nom);
-    toast("PDF de " + MOIS_LONGS[moisCourant.m] + " " + moisCourant.a + " téléchargé.");
+    toast("PDF " + deMois(moisCourant.m) + " " + moisCourant.a + " téléchargé.");
   } catch(e){
     toast("Le PDF n'a pas pu être créé.", true);
   }
